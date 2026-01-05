@@ -17,7 +17,8 @@ export default function Home() {
         {/* Left Panel: AI Space */}
         <ResizablePanel
           defaultSize={25}
-          minSize={20}
+          minSize={50}
+          maxSize={400}
           className="flex flex-col h-full"
         >
           <AISidebar className="h-full w-full" />

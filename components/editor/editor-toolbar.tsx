@@ -21,6 +21,7 @@ import {
     Table as TableIcon,
     Download,
     Upload,
+    Import,
     MoreHorizontal,
     Plus,
     Trash,
@@ -121,7 +122,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                             onClick={() => setIsExportOpen(!isExportOpen)}
                             title="Export"
                         >
-                            <Download className="w-4 h-4" />
+                            <Upload className="w-4 h-4" />
                         </ToggleButton>
                         {isExportOpen && (
                             <>
@@ -141,7 +142,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                         onClick={() => importInputRef.current?.click()}
                         title="Import"
                     >
-                        <Upload className="w-4 h-4" />
+                        <Import className="w-4 h-4" />
                     </ToggleButton>
                     <input
                         type="file"
