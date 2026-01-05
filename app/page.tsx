@@ -15,9 +15,9 @@ export default function Home() {
 
         {/* Left Panel: AI Space */}
         <ResizablePanel
-          defaultSize={25}
-          minSize={20}
-          maxSize={80} // Relaxed constraint for general use, user override was 400px but % is better for library
+          defaultSize={300}
+          minSize={200}
+          maxSize={350} // Relaxed constraint for general use, user override was 400px but % is better for library
           className="flex flex-col h-full"
         >
           <AISidebar className="h-full w-full" />

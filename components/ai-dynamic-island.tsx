@@ -54,14 +54,17 @@ export function AIDynamicIsland({ className }: { className?: string }) {
                                     {[1, 2, 3, 4, 5].map(i => (
                                         <motion.div
                                             key={i}
-                                            animate={{ height: [6, 16, 8, 20, 6] }}
-                                            transition={{
-                                                repeat: Infinity,
-                                                duration: 0.8,
-                                                ease: "easeInOut",
-                                                delay: i * 0.1
+                                            animate={{
+                                                height: isMuted ? 4 : [6, 16, 8, 20, 6],
+                                                backgroundColor: isMuted ? "#52525b" : "#34d399" // zinc-600 vs emerald-400
                                             }}
-                                            className="w-1 bg-gradient-to-t from-green-400 to-emerald-300 rounded-full"
+                                            transition={{
+                                                repeat: isMuted ? 0 : Infinity,
+                                                duration: isMuted ? 0.3 : 0.8,
+                                                ease: "easeInOut",
+                                                delay: isMuted ? 0 : i * 0.1
+                                            }}
+                                            className="w-1 rounded-full"
                                         />
                                     ))}
                                 </div>
