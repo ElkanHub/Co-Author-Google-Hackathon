@@ -1,36 +1,58 @@
+'use client'
+
 import { UserEditor } from "@/components/editor/user-editor";
+import { AISidebar } from "@/components/ai-sidebar";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 
 export default function Home() {
   return (
-    <div className="flex h-screen w-full bg-zinc-50 dark:bg-black overflow-hidden font-sans">
-      {/* Main Workspace */}
-      <div className="flex-1 flex flex-col h-full relative transition-all duration-300 ease-in-out">
+    <div className="h-screen w-full bg-zinc-50 dark:bg-black overflow-hidden font-sans flex flex-col">
+      {/* Main Workspace with Resizable Panels */}
+      <ResizablePanelGroup direction="horizontal" className="flex-1 h-full">
 
-        {/* Header / Nav (Minimal) */}
-        <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center px-6 justify-between flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Co-Author</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-medium">Research Mode</span>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Future: User Profile, Export, etc */}
-          </div>
-        </header>
+        {/* Left Panel: AI Space */}
+        <ResizablePanel
+          defaultSize={25}
+          minSize={15}
+          maxSize={40}
+          collapsible={true}
+          order={1}
+          className="flex flex-col h-full"
+        >
+          <AISidebar className="h-full w-full" />
+        </ResizablePanel>
 
-        {/* Editor Container */}
-        <main className="flex-1 overflow-hidden p-6 flex justify-center">
-          <div className="w-full max-w-[850px] h-full"> {/* A4-ish max width */}
-            <UserEditor />
-          </div>
-        </main>
-      </div>
+        <ResizableHandle withHandle />
 
-      {/* AI Space Placeholder (Stage 2) */}
-      {/* 
-        <div className="w-[400px] border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-full hidden lg:flex flex-col">
-          AI Space
-        </div> 
-      */}
+        {/* Right Panel: Editor */}
+        <ResizablePanel defaultSize={75} order={2} className="flex flex-col h-full bg-zinc-50 dark:bg-black">
+          {/* Header inside the editor panel */}
+          <div className="flex-1 flex flex-col h-full relative">
+            {/* Header */}
+            <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center px-6 justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Co-Author</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-medium">Research Mode</span>
+              </div>
+              <div className="flex items-center gap-4">
+                {/* Future tools */}
+              </div>
+            </header>
+
+            {/* Editor Container */}
+            <main className="flex-1 overflow-hidden p-6 flex justify-center bg-zinc-50 dark:bg-zinc-950/30">
+              <div className="w-full max-w-[850px] h-full shadow-sm">
+                <UserEditor />
+              </div>
+            </main>
+          </div>
+        </ResizablePanel>
+
+      </ResizablePanelGroup>
     </div>
   );
 }
