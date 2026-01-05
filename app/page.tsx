@@ -34,11 +34,15 @@ export default function Home() {
           {/* Header inside the editor panel */}
           <div className="flex-1 flex flex-col h-full relative">
             {/* Header */}
-            <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center px-6 justify-between flex-shrink-0">
+            <header className="relative h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center px-6 justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Co-Author</span>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-medium">Research Mode</span>
               </div>
+
+              {/* Dynamic Island in Header */}
+              <AIDynamicIsland className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+
               <div className="flex items-center gap-4">
                 {/* Future tools */}
               </div>
@@ -55,8 +59,6 @@ export default function Home() {
 
       </ResizablePanelGroup>
 
-      {/* Floating UI */}
-      <AIDynamicIsland />
     </div>
   );
 }

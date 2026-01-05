@@ -6,7 +6,7 @@ import { Mic, MicOff, X, Sparkles, Loader2 } from 'lucide-react'
 import { useAIStore } from '@/store/use-ai-store'
 import { cn } from '@/lib/utils'
 
-export function AIDynamicIsland() {
+export function AIDynamicIsland({ className }: { className?: string }) {
     const { writerState, voiceState, isMuted, toggleMute, setVoiceState } = useAIStore()
 
     // Derived state for layout variants
@@ -15,7 +15,7 @@ export function AIDynamicIsland() {
     const isThinking = writerState === 'thinking'
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2">
+        <div className={cn("flex flex-col items-center gap-2 z-50", className)}>
 
             <AnimatePresence mode="wait">
                 <motion.div
