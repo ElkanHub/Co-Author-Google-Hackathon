@@ -1,5 +1,4 @@
-'use client'
-
+import { AIDynamicIsland } from "@/components/ai-dynamic-island";
 import { UserEditor } from "@/components/editor/user-editor";
 import { AISidebar } from "@/components/ai-sidebar";
 import {
@@ -17,8 +16,8 @@ export default function Home() {
         {/* Left Panel: AI Space */}
         <ResizablePanel
           defaultSize={25}
-          minSize={50}
-          maxSize={400}
+          minSize={20}
+          maxSize={80} // Relaxed constraint for general use, user override was 400px but % is better for library
           className="flex flex-col h-full"
         >
           <AISidebar className="h-full w-full" />
@@ -55,6 +54,9 @@ export default function Home() {
         </ResizablePanel>
 
       </ResizablePanelGroup>
+
+      {/* Floating UI */}
+      <AIDynamicIsland />
     </div>
   );
 }
