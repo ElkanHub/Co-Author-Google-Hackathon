@@ -22,6 +22,7 @@ import { FontSize } from './extensions/font-size'
 import { Indent } from './extensions/indent'
 import { ResizableImage } from './extensions/resizable-image'
 import { useEffect } from 'react'
+import { useDocumentSync } from '@/hooks/use-document-sync';
 
 export function UserEditor() {
     const { setContent, setSelection, setActiveHeading } = useEditorStore()
