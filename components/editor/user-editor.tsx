@@ -18,6 +18,7 @@ import CharacterCount from '@tiptap/extension-character-count'
 
 import { useEditorStore } from '@/store/use-editor-store'
 import { EditorToolbar } from './editor-toolbar'
+import { FontSize } from './extensions/font-size'
 import { Indent } from './extensions/indent'
 import { ResizableImage } from './extensions/resizable-image'
 import { useEffect } from 'react'
@@ -41,6 +42,7 @@ export function UserEditor() {
                 types: ['heading', 'paragraph', 'image'],
             }),
             Indent,
+            FontSize,
             Highlight.configure({ multicolor: true }),
             Image.configure({
                 allowBase64: true,

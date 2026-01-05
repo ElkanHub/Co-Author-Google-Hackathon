@@ -1,84 +1,142 @@
 import { Editor, JSONContent } from '@tiptap/react'
 import { saveAs } from 'file-saver'
-import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
 export async function exportToPdf(editor: Editor, filename: string = 'document.pdf') {
     const element = editor.view.dom as HTMLElement
-    // Use html2canvas to capture the editor content
-    // Note: robust text selection/searchability in PDF requires a different approach (e.g. printing)
-    // but for "print-accurate" visual, canvas is often used in client-side only apps.
-    // Alternatively, we can use jsPDF's html method.
-
-    const canvas = await html2canvas(element, { scale: 2 })
-    const imgData = canvas.toDataURL('image/png')
-
     const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
-        format: [canvas.width, canvas.height]
+        format: 'a4'
     })
 
-    // Calculate PDF page size based on standard A4 if needed, for now exact fit
-    // For proper A4 pagination, we'd need more logic.
-    // Let's settle for a simple 1-page snapshot for MVP or multipage if valid.
-
-    // Better approach for text:
-    const pdfDoc = new jsPDF()
-    // pdfDoc.html is async
-    await pdfDoc.html(element, {
+    await pdf.html(element, {
         callback: function (doc) {
             doc.save(filename);
         },
-        x: 10,
-        y: 10,
-        width: 190, // A4 width is ~210mm, minus margins
+        x: 20,
+        y: 20,
+        width: 400, // Approximate width to fit A4 with margins
         windowWidth: element.scrollWidth
     });
 }
 
 export function exportToMarkdown(editor: Editor, filename: string = 'document.md') {
-    // Tiptap store content as HTML or JSON. 
-    // We need a serializer. Tiptap PRO has one, or we use a basic one.
-    // For now, let's use a simple HTML to Markdown converter or Tiptap's built-in if available (it isn't by default).
-    // TurndownService is a common choice. Since we didn't install turndown, 
-    // we can use a basic custom approach or just dump text if structure is complex.
-    // WAITING FOR: proper markdown serializer.
-    // Actually, Tiptap has `editor.storage.markdown.getMarkdown()` if the extension is installed.
-    // But we didn't install `tiptap-markdown`.
-    // Let's assume we can get basic text or HTML.
+    const json = editor.getJSON()
+    let markdown = ''
 
-    // Fallback: simple text
-    const content = editor.getText()
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' })
+    const serializeNode = (node: JSONContent, parentType?: string): string => {
+        if (!node.type) return ''
+
+        switch (node.type) {
+            case 'doc':
+                return node.content?.map(c => serializeNode(c)).join('\n\n') || ''
+            case 'heading':
+                const level = node.attrs?.level || 1
+                return `${'#'.repeat(level)} ${node.content?.map(c => serializeNode(c)).join('') || ''}`
+            case 'paragraph':
+                return node.content?.map(c => serializeNode(c)).join('') || ''
+            case 'text':
+                let text = node.text || ''
+                if (node.marks) {
+                    node.marks.forEach(mark => {
+                        if (mark.type === 'bold') text = `**${text}**`
+                        if (mark.type === 'italic') text = `*${text}*`
+                        if (mark.type === 'strike') text = `~~${text}~~`
+                        if (mark.type === 'code') text = `\`${text}\``
+                    })
+                }
+                return text
+            case 'bulletList':
+                return node.content?.map(c => serializeNode(c, 'bulletList')).join('\n') || ''
+            case 'orderedList':
+                return node.content?.map((c, i) => serializeNode(c, 'orderedList')).join('\n') || ''
+            case 'listItem':
+                const symbol = parentType === 'orderedList' ? `1.` : '-'
+                return `${symbol} ${node.content?.map(c => serializeNode(c)).join('')}`
+            case 'blockquote':
+                return `> ${node.content?.map(c => serializeNode(c)).join('')}`
+            case 'codeBlock':
+                return `\`\`\`${node.attrs?.language || ''}\n${node.content?.map(c => serializeNode(c)).join('')}\n\`\`\``
+            case 'image':
+                return `![${node.attrs?.alt || ''}](${node.attrs?.src})`
+            case 'hardBreak':
+                return '  \n'
+            default:
+                return ''
+        }
+    }
+
+    markdown = serializeNode(json)
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
     saveAs(blob, filename)
 }
 
 export async function exportToDocx(editor: Editor, filename: string = 'document.docx') {
     const json = editor.getJSON()
 
-    // Transform Tiptap JSON to DOCX paragraphs
-    // This is a simplified mapping.
-    const children = (json.content as JSONContent[])?.map(node => {
+    const processNode = (node: JSONContent): Paragraph[] => {
+        if (!node.type) return []
+
         switch (node.type) {
             case 'heading':
-                return new Paragraph({
+                return [new Paragraph({
                     text: node.content?.[0]?.text || '',
-                    heading: node.attrs?.level === 1 ? HeadingLevel.HEADING_1 : HeadingLevel.HEADING_2,
-                })
+                    heading: node.attrs?.level === 1 ? HeadingLevel.HEADING_1 :
+                        node.attrs?.level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
+                    alignment: node.attrs?.textAlign === 'center' ? AlignmentType.CENTER :
+                        node.attrs?.textAlign === 'right' ? AlignmentType.RIGHT : AlignmentType.LEFT
+                })]
             case 'paragraph':
-                return new Paragraph({
+                return [new Paragraph({
                     children: node.content?.map((c: JSONContent) => new TextRun({
                         text: c.text || '',
                         bold: c.marks?.some(m => m.type === 'bold'),
                         italics: c.marks?.some(m => m.type === 'italic'),
-                    })) || []
-                })
+                        strike: c.marks?.some(m => m.type === 'strike'),
+                    })) || [],
+                    alignment: node.attrs?.textAlign === 'center' ? AlignmentType.CENTER :
+                        node.attrs?.textAlign === 'right' ? AlignmentType.RIGHT : AlignmentType.LEFT
+                })]
+            case 'bulletList':
+                return (node.content || []).flatMap(li =>
+                    (li.content || []).flatMap(p =>
+                        new Paragraph({
+                            children: (p.content || []).map((c: JSONContent) => new TextRun({
+                                text: c.text || '',
+                                bold: c.marks?.some(m => m.type === 'bold'),
+                                italics: c.marks?.some(m => m.type === 'italic'),
+                            })),
+                            bullet: { level: 0 } // Basic bullet support
+                        })
+                    )
+                )
+            case 'orderedList':
+                return (node.content || []).flatMap(li =>
+                    (li.content || []).flatMap(p =>
+                        new Paragraph({
+                            children: (p.content || []).map((c: JSONContent) => new TextRun({
+                                text: c.text || '',
+                                bold: c.marks?.some(m => m.type === 'bold'),
+                                italics: c.marks?.some(m => m.type === 'italic'),
+                            })),
+                            // Numbering requires more complex setup in docx, fallback to clean paragraphs for now or use bullets
+                            bullet: { level: 0 }
+                        })
+                    )
+                )
             default:
-                return new Paragraph({ text: '' })
+                // Handle nested recursion for wrappers if needed, but for now flat map top levels
+                if (node.content) {
+                    return node.content.flatMap(processNode)
+                }
+                return []
         }
-    }) || []
+    }
+
+    const children = (json.content as JSONContent[]).flatMap(processNode)
 
     const doc = new Document({
         sections: [{
@@ -93,34 +151,59 @@ export async function exportToDocx(editor: Editor, filename: string = 'document.
 
 export function exportToLatex(editor: Editor, filename: string = 'document.tex') {
     const json = editor.getJSON()
+    let latex = '\\documentclass{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage{graphicx}\n\\usepackage{hyperref}\n\n\\begin{document}\n\n'
 
-    // Very basic JSON to LaTeX converter
-    let latex = '\\documentclass{article}\n\\usepackage{graphicx}\n\\begin{document}\n\n'
+    const escapeLatex = (str: string) => {
+        return str.replace(/([#$%&_{}])/g, '\\$1')
+    }
 
-        ; (json.content as JSONContent[])?.forEach(node => {
+    const processContent = (nodes: JSONContent[]): string => {
+        let output = ''
+        nodes.forEach(node => {
             switch (node.type) {
                 case 'heading':
                     const level = node.attrs?.level === 1 ? 'section' : node.attrs?.level === 2 ? 'subsection' : 'subsubsection'
-                    latex += `\\${level}{${node.content?.[0]?.text || ''}}\n\n`
+                    output += `\\${level}{${escapeLatex(node.content?.[0]?.text || '')}}\n\n`
                     break
                 case 'paragraph':
                     const text = node.content?.map(c => {
-                        let t = c.text || ''
+                        let t = escapeLatex(c.text || '')
                         if (c.marks?.some(m => m.type === 'bold')) t = `\\textbf{${t}}`
                         if (c.marks?.some(m => m.type === 'italic')) t = `\\textit{${t}}`
+                        if (c.marks?.some(m => m.type === 'code')) t = `\\texttt{${t}}`
                         return t
                     }).join('') || ''
-                    latex += `${text}\n\n`
+                    // Append blank line for paragraph break
+                    if (text.trim()) output += `${text}\n\n`
+                    break
+                case 'bulletList':
+                    output += '\\begin{itemize}\n'
+                    node.content?.forEach(li => {
+                        output += `  \\item ${processContent(li.content || [])}`
+                    })
+                    output += '\\end{itemize}\n\n'
+                    break
+                case 'orderedList':
+                    output += '\\begin{enumerate}\n'
+                    node.content?.forEach(li => {
+                        output += `  \\item ${processContent(li.content || [])}`
+                    })
+                    output += '\\end{enumerate}\n\n'
+                    break
+                case 'blockquote':
+                    output += '\\begin{quote}\n'
+                    output += processContent(node.content || [])
+                    output += '\\end{quote}\n\n'
                     break
                 case 'image':
-                    // LaTeX image handling requires the image file to be accessible or embedded. 
-                    // For a single .tex file, we can't easily embed images without base64 packages or zip.
-                    // We'll insert a placeholder comment.
-                    latex += `% <img src="${node.attrs?.src}" /> (Image export requires bundling)\n\n`
+                    output += `\\begin{figure}[h]\n\\centering\n\\includegraphics[width=\\linewidth]{${node.attrs?.src}}\n\\caption{${node.attrs?.alt || 'Image'}}\n\\end{figure}\n\n`
                     break
             }
         })
+        return output
+    }
 
+    latex += processContent(json.content || [])
     latex += '\\end{document}'
 
     const blob = new Blob([latex], { type: 'application/x-latex;charset=utf-8' })
