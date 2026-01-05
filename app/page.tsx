@@ -17,10 +17,7 @@ export default function Home() {
         {/* Left Panel: AI Space */}
         <ResizablePanel
           defaultSize={25}
-          minSize={15}
-          maxSize={40}
-          collapsible={true}
-          order={1}
+          minSize={20}
           className="flex flex-col h-full"
         >
           <AISidebar className="h-full w-full" />
@@ -29,7 +26,11 @@ export default function Home() {
         <ResizableHandle withHandle />
 
         {/* Right Panel: Editor */}
-        <ResizablePanel defaultSize={75} order={2} className="flex flex-col h-full bg-zinc-50 dark:bg-black">
+        <ResizablePanel
+          defaultSize={75}
+          minSize={30}
+          className="flex flex-col h-full bg-zinc-50 dark:bg-black"
+        >
           {/* Header inside the editor panel */}
           <div className="flex-1 flex flex-col h-full relative">
             {/* Header */}
