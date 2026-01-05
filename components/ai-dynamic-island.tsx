@@ -15,105 +15,118 @@ export function AIDynamicIsland({ className }: { className?: string }) {
     const isThinking = writerState === 'thinking'
 
     return (
-        <div className={cn("flex flex-col items-center gap-2 z-50", className)}>
-
-            <AnimatePresence mode="wait">
+        <div className={cn("flex flex-col items-center gap-2 z-50 pointer-events-none", className)}>
+            <motion.div
+                layout
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="pointer-events-auto"
+            >
                 <motion.div
                     layout
-                    initial={{ borderRadius: 24 }}
+                    style={{ borderRadius: 32 }}
                     animate={{
-                        width: isVoiceActive ? 'auto' : isWriting ? 200 : isThinking ? 160 : 140,
-                        height: isVoiceActive ? 60 : 48,
-                        borderRadius: 30
+                        width: isVoiceActive ? 'auto' : isWriting ? 220 : isThinking ? 180 : 150,
+                        height: isVoiceActive ? 52 : 44,
                     }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    transition={{
+                        type: "spring",
+                        bounce: 0.1,
+                        duration: 0.8
+                    }}
                     className={cn(
-                        "bg-black dark:bg-black/90 backdrop-blur-md text-white shadow-xl flex items-center justify-center overflow-hidden border border-zinc-800/50 relative px-1",
-                        isVoiceActive ? "px-4" : "px-1"
+                        "bg-black dark:bg-black/90 backdrop-blur-md text-white shadow-2xl flex items-center justify-center overflow-hidden border border-zinc-800/50 relative mx-auto",
+                        isVoiceActive ? "px-1 pr-2" : "px-1"
                     )}
                 >
-                    <motion.div layout className="flex items-center gap-3 w-full justify-between min-w-0">
-
-                        {/* VOICE MODE */}
+                    <AnimatePresence mode="popLayout" initial={false}>
                         {isVoiceActive ? (
                             <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="flex items-center gap-4 w-full px-2"
+                                key="voice"
+                                initial={{ opacity: 0, scale: 0.95, filter: 'blur(4px)' }}
+                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, scale: 0.95, filter: 'blur(2px)' }}
+                                transition={{ duration: 0.4, ease: "easeInOut" }}
+                                className="flex items-center gap-3 w-full px-2 min-w-[300px] justify-between"
                             >
-                                {/* Waveform Visualizer (Mock) */}
-                                <div className="flex items-center gap-1 h-4">
+                                {/* Waveform Visualizer */}
+                                <div className="flex items-center gap-0.5 h-8 w-12 justify-center">
                                     {[1, 2, 3, 4, 5].map(i => (
                                         <motion.div
                                             key={i}
-                                            animate={{ height: [4, 12, 6, 14, 4] }}
-                                            transition={{ repeat: Infinity, duration: 1, delay: i * 0.1 }}
-                                            className="w-1 bg-green-400 rounded-full"
+                                            animate={{ height: [6, 16, 8, 20, 6] }}
+                                            transition={{
+                                                repeat: Infinity,
+                                                duration: 0.8,
+                                                ease: "easeInOut",
+                                                delay: i * 0.1
+                                            }}
+                                            className="w-1 bg-gradient-to-t from-green-400 to-emerald-300 rounded-full"
                                         />
                                     ))}
                                 </div>
 
-                                <span className="text-sm font-medium whitespace-nowrap">Listening...</span>
+                                <span className="text-sm font-medium text-zinc-200">Listening...</span>
 
-                                <div className="flex items-center gap-2 ml-auto">
+                                <div className="flex items-center gap-1.5 ml-auto">
                                     <button
                                         onClick={toggleMute}
                                         className={cn(
-                                            "p-2 rounded-full transition-colors",
-                                            isMuted ? "bg-red-500/20 text-red-400" : "bg-white/10 hover:bg-white/20"
+                                            "p-1.5 rounded-full transition-all duration-200",
+                                            isMuted ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
                                         )}
                                     >
-                                        {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                                        {isMuted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                                     </button>
                                     <button
                                         onClick={() => setVoiceState('inactive')}
-                                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                                        className="p-1.5 rounded-full bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-all duration-200"
                                     >
-                                        <X className="w-4 h-4" />
+                                        <X className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             </motion.div>
                         ) : (
-                            /* IDLE / WRITING MODE */
                             <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="flex items-center justify-center w-full px-3 gap-2"
+                                key="status"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.2 }}
+                                className="flex items-center justify-center w-full px-3 gap-2.5 absolute inset-0"
                             >
                                 {/* Status Icon */}
-                                <div className="relative flex items-center justify-center w-6 h-6">
+                                <div className="relative flex items-center justify-center">
                                     {isThinking ? (
-                                        <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+                                        <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
                                     ) : isWriting ? (
-                                        <Sparkles className="w-5 h-5 text-purple-400 animate-pulse" />
+                                        <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
                                     ) : (
-                                        <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                     )}
                                 </div>
 
                                 {/* Status Text or Call Action */}
-                                <div className="flex flex-col items-start justify-center h-full min-w-[80px]">
+                                <div className="flex items-center">
                                     {isThinking ? (
-                                        <span className="text-xs font-medium text-zinc-300">Thinking...</span>
+                                        <span className="text-sm font-medium text-zinc-300">Thinking</span>
                                     ) : isWriting ? (
-                                        <span className="text-xs font-medium text-purple-300">Writing...</span>
+                                        <span className="text-sm font-medium text-purple-200">Writing</span>
                                     ) : (
                                         <button
                                             onClick={() => setVoiceState('active')}
-                                            className="text-xs font-medium hover:text-white text-zinc-300 transition-colors flex items-center gap-1"
+                                            className="text-sm font-medium text-zinc-300 hover:text-white transition-colors flex items-center gap-2"
                                         >
-                                            <Mic className="w-3 h-3" />
-                                            <span>Ask AI</span>
+                                            <span className="opacity-50">Ask</span>
+                                            <span>AI</span>
                                         </button>
                                     )}
                                 </div>
                             </motion.div>
                         )}
-                    </motion.div>
+                    </AnimatePresence>
                 </motion.div>
-            </AnimatePresence>
+            </motion.div>
         </div>
     )
 }
