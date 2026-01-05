@@ -8,6 +8,7 @@ import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import { useEditorStore } from '@/store/use-editor-store'
 import { EditorToolbar } from './editor-toolbar'
+import { Indent } from './extensions/indent'
 import { useEffect } from 'react'
 
 export function UserEditor() {
@@ -28,10 +29,11 @@ export function UserEditor() {
             TextAlign.configure({
                 types: ['heading', 'paragraph'],
             }),
+            Indent,
         ],
         editorProps: {
             attributes: {
-                class: 'prose prose-slate prose-lg max-w-none focus:outline-none min-h-[calc(100vh-200px)] py-8 px-12 bg-white dark:bg-zinc-950 dark:text-zinc-100',
+                class: 'prose prose-zinc prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[calc(100vh-200px)] py-8 px-12 bg-white dark:bg-zinc-950',
             },
         },
         onUpdate: ({ editor }) => {
@@ -40,7 +42,8 @@ export function UserEditor() {
         onSelectionUpdate: ({ editor }) => {
             const { from, to } = editor.state.selection
             setSelection({ from, to })
-        }
+        },
+        immediatelyRender: false,
     })
 
     // Cleanup

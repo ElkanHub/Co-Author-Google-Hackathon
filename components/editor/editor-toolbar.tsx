@@ -144,15 +144,17 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 {/* Indent Logic mainly for lists */}
                 <ToggleButton
                     isActive={false}
-                    onClick={() => editor.chain().focus().sinkListItem('listItem').run()}
-                    disabled={!editor.can().sinkListItem('listItem')}
+                    //@ts-ignore - custom extension command check
+                    onClick={() => editor.chain().focus().indent().run()}
+                    disabled={false}
                 >
                     <Indent className="w-4 h-4" />
                 </ToggleButton>
                 <ToggleButton
                     isActive={false}
-                    onClick={() => editor.chain().focus().liftListItem('listItem').run()}
-                    disabled={!editor.can().liftListItem('listItem')}
+                    //@ts-ignore
+                    onClick={() => editor.chain().focus().outdent().run()}
+                    disabled={false}
                 >
                     <Outdent className="w-4 h-4" />
                 </ToggleButton>
