@@ -24,8 +24,13 @@ import { ResizableImage } from './extensions/resizable-image'
 import { useEffect } from 'react'
 import { useDocumentSync } from '@/hooks/use-document-sync';
 
-export function UserEditor() {
+interface UserEditorProps {
+    documentId?: string | null;
+}
+
+export function UserEditor({ documentId }: UserEditorProps) {
     const { setContent, setSelection, setActiveHeading } = useEditorStore()
+    // Sync handled above
 
     const editor = useEditor({
         extensions: [
