@@ -69,6 +69,26 @@ export function AISidebar({ className }: AISidebarProps) {
                             <div>
                                 <Typewriter text={card.content} speed={10} />
                             </div>
+
+                            {/* Actions */}
+                            {card.actions && card.actions.length > 0 && (
+                                <div className="mt-3 flex items-center gap-2">
+                                    {card.actions.map((action, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={action.onClick}
+                                            className={cn(
+                                                "px-3 py-1.5 rounded-md text-xs font-medium transition-colors border",
+                                                action.variant === 'secondary'
+                                                    ? "bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                                    : "bg-indigo-500 text-white border-transparent hover:bg-indigo-600 shadow-sm"
+                                            )}
+                                        >
+                                            {action.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))
                 )}

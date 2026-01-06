@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAIStore } from '@/store/use-ai-store';
+import { useAIStore, AICard } from '@/store/use-ai-store';
 
 /**
  * useAIAgent
@@ -11,18 +11,40 @@ import { useAIStore } from '@/store/use-ai-store';
  * @param isSyncing - Wait for sync before analyzing
  */
 export function useAIAgent(content: string, documentId: string | null, isSyncing: boolean) {
-    const { isPaused, setWriterState } = useAIStore();
+    const { isPaused, setWriterState, cards, addCard } = useAIStore();
     const [analysis, setAnalysis] = useState<any>(null);
-
-    // We use a separate debounce for AI than DB
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Helper to perform the actual generation
+    const generateContent = async (intent: string, stage: string, context: string) => {
+        setWriterState('writing');
+        try {
+            const genRes = await fetch('/api/ai/generate', {
+                method: 'POST',
+                body: JSON.stringify({ intent, stage, text: context })
+            });
+            const cardData = await genRes.json();
+
+            addCard({
+                id: crypto.randomUUID(),
+                type: cardData.type || 'suggestion',
+                content: cardData.content,
+                reason: cardData.reason,
+                timestamp: new Date()
+            });
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setWriterState('idle');
+        }
+    };
 
     // Session Greeting
     useEffect(() => {
         if (documentId) {
             const hasCards = useAIStore.getState().cards.length > 0;
             if (!hasCards) {
-                useAIStore.getState().addCard({
+                addCard({
                     id: crypto.randomUUID(),
                     type: 'suggestion',
                     content: "Hello! I'm your AI co-author. I'm ready to research and write by your side. Start typing, and I'll jump in with suggestions.",
@@ -30,59 +52,47 @@ export function useAIAgent(content: string, documentId: string | null, isSyncing
                 });
             }
         }
-    }, [documentId]);
+    }, [documentId, addCard]);
 
     useEffect(() => {
-        // If paused, do absolutely nothing. The AI is asleep.
-        if (isPaused || !documentId || !content || content.length < 50) {
-            return;
-        }
+        if (isPaused || !documentId || !content || content.length < 50) return;
 
-        // Debounce: Wait 4 seconds of inactivity before analyzing
-        // This prevents spamming the AI while user is furiously typing
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
         timeoutRef.current = setTimeout(async () => {
-            // 1. Analyze Intent
             setWriterState('thinking');
             try {
+                // Prepare context with previous suggestions
+                const previousSuggestions = cards.slice(0, 3).map(c => c.content);
+
                 const analyzeRes = await fetch('/api/ai/analyze', {
                     method: 'POST',
-                    body: JSON.stringify({ text: content })
+                    body: JSON.stringify({ text: content, previousSuggestions })
                 });
                 const intentData = await analyzeRes.json();
                 setAnalysis(intentData);
 
-                console.log('AI Intent:', intentData);
-
-                // 2. Decide if we should generate
-                // Simple rule for now: If confidence > 0.7, generate a card
-                if (intentData.confidence > 0.7) {
-                    setWriterState('writing');
-                    const genRes = await fetch('/api/ai/generate', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            intent: intentData.intent,
-                            stage: intentData.stage,
-                            text: content
-                        })
-                    });
-                    const cardData = await genRes.json();
-
-                    console.log('AI Generated Card:', cardData);
-
-                    // Push to Store
-                    useAIStore.getState().addCard({
+                // Logic Gate
+                if (intentData.feedback_needed) {
+                    setWriterState('idle');
+                    // Ask user for permission
+                    addCard({
                         id: crypto.randomUUID(),
-                        type: cardData.type || 'suggestion',
-                        content: cardData.content,
-                        reason: cardData.reason,
-                        timestamp: new Date()
+                        type: 'feedback',
+                        content: `I realized you are working on the **${intentData.section}**. ${intentData.intent}. Should I generate some content for this?`,
+                        timestamp: new Date(),
+                        actions: [
+                            {
+                                label: 'Yes, please',
+                                onClick: () => generateContent(intentData.intent, intentData.stage, content)
+                            }
+                        ]
                     });
-
-                    setWriterState('idle'); // Done
+                } else if (intentData.confidence > 0.7 && intentData.should_generate) {
+                    // Auto-generate
+                    await generateContent(intentData.intent, intentData.stage, content);
                 } else {
-                    setWriterState('idle'); // Intent not strong enough
+                    setWriterState('idle');
                 }
 
             } catch (err) {
@@ -95,9 +105,7 @@ export function useAIAgent(content: string, documentId: string | null, isSyncing
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
         };
 
-    }, [content, isPaused, documentId, setWriterState]); // Re-run when content changes
+    }, [content, isPaused, documentId, setWriterState, cards, addCard]);
 
-    return {
-        currentAnalysis: analysis
-    };
+    return { currentAnalysis: analysis };
 }

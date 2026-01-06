@@ -9,6 +9,11 @@ export interface AICard {
     content: string
     reason?: string
     timestamp: Date
+    actions?: {
+        label: string
+        onClick: () => void
+        variant?: 'primary' | 'secondary'
+    }[]
 }
 
 interface AIStore {
@@ -25,6 +30,7 @@ interface AIStore {
     setIsPaused: (isPaused: boolean) => void
     togglePause: () => void
     addCard: (card: AICard) => void
+    removeCard: (id: string) => void
     clearCards: () => void
 }
 
@@ -43,4 +49,5 @@ export const useAIStore = create<AIStore>((set) => ({
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
     addCard: (card) => set((state) => ({ cards: [card, ...state.cards] })),
     clearCards: () => set({ cards: [] }),
+    removeCard: (id: string) => set((state) => ({ cards: state.cards.filter(c => c.id !== id) })),
 }))
