@@ -9,9 +9,15 @@ interface TypewriterProps {
 }
 
 export function Typewriter({ text, speed = 10, onComplete }: TypewriterProps) {
-    const [displayedText, setDisplayedText] = useState('')
+    const [displayedText, setDisplayedText] = useState(speed === 0 ? text : '')
 
     useEffect(() => {
+        if (speed === 0) {
+            setDisplayedText(text)
+            if (onComplete) onComplete()
+            return
+        }
+
         let i = 0
         setDisplayedText('') // Reset on new text
 

@@ -127,7 +127,7 @@ function AICardItem({ card }: { card: AICard }) {
 
             {/* Content */}
             <div>
-                <Typewriter text={card.content} speed={card.fromDb ? 0.1 : 10} />
+                <Typewriter text={card.content} speed={card.fromDb ? 0 : 10} />
             </div>
 
             {/* Actions */}
