@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Co-Author
+
+An intelligent, AI-powered writing assistant designed to augment your workflow without getting in the way.
+
+## Features
+
+### ✍️ Intelligent Editor
+- **Rich Text Editing**: A smooth, Notion-style writing experience.
+- **Smart Context Menu**: Right-click to access standard tools (Copy, Cut, Paste) and powerful AI actions.
+- **AI Sidebar**: A dedicated "Intelligence Stream" that houses citations, suggestions, and analysis.
+
+### 🧠 AI Capabilities
+- **Cite**: Automatically generate citations for claims.
+- **Paraphrase**: Rewrite text for clarity or tone.
+- **Summarize**: Condense complex paragraphs.
+- **Expand**: Flesh out ideas with more detail.
+- **Analyze**: Critique arguments and logic.
+- **Counterarguments**: Spot potential holes in your reasoning.
+
+### ⚡ Power User Tools
+- **Deep Filtering**: Filter your AI stream by type (Citation, Suggestion, Action, etc.).
+- **Search**: Instantly find past insights in the sidebar.
+- **Responsive Design**: Interfaces that adapt to your viewport.
 
 ## Getting Started
 
-First, run the development server:
+1.  **Clone the repository**.
+2.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
+3.  **Set up Environment**:
+    - Create a `.env.local` file.
+    - Add your `GOOGLE_API_KEY` (Gemini) and Supabase credentials.
+4.  **Run Development Server**:
+    ```bash
+    npm run dev
+    ```
+5.  Open [http://localhost:3000](http://localhost:3000).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Tech Stack
+- **Framework**: Next.js 14
+- **AI Model**: Google Gemini Pro
+- **Editor**: Tiptap
+- **Database**: Supabase
+- **Styling**: Tailwind CSS
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Built for the future of writing.*
