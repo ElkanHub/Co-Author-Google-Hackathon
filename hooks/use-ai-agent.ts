@@ -70,6 +70,11 @@ export function useAIAgent(content: string, documentId: string | null, isSyncing
     useEffect(() => {
         if (isPaused || !documentId || !content || content.length < 50) return;
 
+        // BLOCKER: If the last card was a feedback request, wait for user response.
+        if (cards.length > 0 && cards[0].type === 'feedback') {
+            return;
+        }
+
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
         timeoutRef.current = setTimeout(async () => {
@@ -88,16 +93,40 @@ export function useAIAgent(content: string, documentId: string | null, isSyncing
                 // Logic Gate
                 if (intentData.feedback_needed) {
                     setWriterState('idle');
+
+                    const feedbackId = crypto.randomUUID()
+
                     // Ask user for permission (Persist this too)
                     await saveCard({
-                        id: crypto.randomUUID(),
+                        id: feedbackId,
                         type: 'feedback',
                         content: `I realized you are working on the **${intentData.section}**. ${intentData.intent}. Should I generate some content for this?`,
                         timestamp: new Date(),
                         actions: [
                             {
                                 label: 'Yes, please',
-                                onClick: () => generateContent(intentData.intent, intentData.stage, content)
+                                onClick: () => {
+                                    // Remove the feedback card then generate
+                                    // removeCard(feedbackId) // Optional: keep it as history? User said "if yes it goes on to general". 
+                                    // Usually better to keep the question in history or replace it. 
+                                    // Let's keep it but maybe mark it resolved? 
+                                    // For simplicity: We just generate. The old feedback card flows down.
+                                    // Limitation: It will still be Type=Feedback, so it might Block again?
+                                    // FIX: We must REMOVE or UPDATE the feedback card to not be the top one?
+                                    // Or just Rely on the new card being added on top.
+                                    // "Yes" -> Generate -> New Card added on top -> Block cleared?
+                                    // YES. New card is type 'suggestion'. Block cleared.
+                                    generateContent(intentData.intent, intentData.stage, content)
+                                }
+                            },
+                            {
+                                label: 'No, thanks',
+                                variant: 'secondary',
+                                onClick: () => {
+                                    // Dismiss: Remove the card so we stop blocking
+                                    // removeCard is needed here.
+                                    useAIStore.getState().removeCard(feedbackId)
+                                }
                             }
                         ]
                     }, documentId);
