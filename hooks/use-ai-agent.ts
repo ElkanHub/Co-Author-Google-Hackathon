@@ -17,6 +17,21 @@ export function useAIAgent(content: string, documentId: string | null, isSyncing
     // We use a separate debounce for AI than DB
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Session Greeting
+    useEffect(() => {
+        if (documentId) {
+            const hasCards = useAIStore.getState().cards.length > 0;
+            if (!hasCards) {
+                useAIStore.getState().addCard({
+                    id: crypto.randomUUID(),
+                    type: 'suggestion',
+                    content: "Hello! I'm your AI co-author. I'm ready to research and write by your side. Start typing, and I'll jump in with suggestions.",
+                    timestamp: new Date()
+                });
+            }
+        }
+    }, [documentId]);
+
     useEffect(() => {
         // If paused, do absolutely nothing. The AI is asleep.
         if (isPaused || !documentId || !content || content.length < 50) {
