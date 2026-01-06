@@ -7,7 +7,7 @@ import { useAIStore } from '@/store/use-ai-store'
 import { cn } from '@/lib/utils'
 
 export function AIDynamicIsland({ className }: { className?: string }) {
-    const { writerState, voiceState, isMuted, toggleMute, setVoiceState } = useAIStore()
+    const { writerState, voiceState, isMuted, toggleMute, setVoiceState, isPaused, togglePause } = useAIStore()
 
     // Derived state for layout variants
     const isVoiceActive = voiceState === 'active'
@@ -116,13 +116,36 @@ export function AIDynamicIsland({ className }: { className?: string }) {
                                     ) : isWriting ? (
                                         <span className="text-sm font-medium text-purple-200">Writing</span>
                                     ) : (
-                                        <button
-                                            onClick={() => setVoiceState('active')}
-                                            className="text-sm font-medium text-zinc-300 hover:text-white transition-colors flex items-center gap-2"
-                                        >
-                                            <span className="opacity-50">Ask</span>
-                                            <span>AI</span>
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setVoiceState('active')}
+                                                className="text-sm font-medium text-zinc-300 hover:text-white transition-colors flex items-center gap-2"
+                                            >
+                                                <span className="opacity-50">Ask</span>
+                                                <span>AI</span>
+                                            </button>
+
+                                            {/* Divider */}
+                                            <div className="w-px h-3 bg-zinc-700 mx-1" />
+
+                                            <button
+                                                onClick={togglePause}
+                                                className={cn(
+                                                    "p-1 rounded-full transition-colors flex items-center justify-center",
+                                                    isPaused ? "text-yellow-500 bg-yellow-500/10" : "text-zinc-600 hover:text-white"
+                                                )}
+                                                title={isPaused ? "Resume Autonomy" : "Pause Autonomy"}
+                                            >
+                                                {isPaused ? (
+                                                    <div className="flex items-center gap-1.5 px-1">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                                                        <span className="text-[10px] uppercase font-bold tracking-wider">Paused</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-1.5 h-1.5 rounded-sm bg-zinc-500" />
+                                                )}
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </motion.div>

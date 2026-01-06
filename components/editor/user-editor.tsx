@@ -22,6 +22,7 @@ import { FontSize } from './extensions/font-size'
 import { Indent } from './extensions/indent'
 import { ResizableImage } from './extensions/resizable-image'
 import { useEffect } from 'react'
+import { useAIAgent } from '@/hooks/use-ai-agent';
 import { useDocumentSync } from '@/hooks/use-document-sync';
 
 interface UserEditorProps {
@@ -30,7 +31,6 @@ interface UserEditorProps {
 
 export function UserEditor({ documentId }: UserEditorProps) {
     const { setContent, setSelection, setActiveHeading } = useEditorStore()
-    // Sync handled above
 
     const editor = useEditor({
         extensions: [
@@ -83,6 +83,13 @@ export function UserEditor({ documentId }: UserEditorProps) {
         },
         immediatelyRender: false,
     })
+
+    // 1. Sync to Supabase
+    const { isSyncing } = useDocumentSync(editor, documentId || null);
+
+    // 2. AI Autonomy Loop
+    // We pass the plain text and sync status
+    useAIAgent(editor?.getText() || '', documentId || null, isSyncing);
 
     // Cleanup
     useEffect(() => {
