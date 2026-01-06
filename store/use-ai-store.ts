@@ -38,6 +38,7 @@ interface AIStore {
     // Async Actions
     fetchCards: (documentId: string) => Promise<void>
     saveCard: (card: AICard, documentId: string) => Promise<void>
+    deleteCard: (id: string) => Promise<void>
 }
 
 export const useAIStore = create<AIStore>((set, get) => ({
@@ -92,5 +93,16 @@ export const useAIStore = create<AIStore>((set, get) => ({
             reason: card.reason,
             created_at: card.timestamp.toISOString()
         })
+    },
+
+    deleteCard: async (id: string) => {
+        const supabase = createClient()
+        // Optimistic update
+        set((state) => ({ cards: state.cards.filter(c => c.id !== id) }))
+
+        await supabase
+            .from('ai_generations')
+            .delete()
+            .eq('id', id)
     }
 }))
