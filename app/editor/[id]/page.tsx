@@ -23,7 +23,7 @@ export default function EditorPage() {
                 <ResizablePanel
                     defaultSize={300}
                     minSize={200}
-                    maxSize={350}
+                    maxSize={450}
                     className="flex flex-col h-full"
                 >
                     <AISidebar className="h-full w-full" />

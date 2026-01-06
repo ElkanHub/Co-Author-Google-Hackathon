@@ -1,5 +1,5 @@
-'use client'
-
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useState, useEffect } from 'react'
 
 interface TypewriterProps {
@@ -8,7 +8,7 @@ interface TypewriterProps {
     onComplete?: () => void
 }
 
-export function Typewriter({ text, speed = 15, onComplete }: TypewriterProps) {
+export function Typewriter({ text, speed = 10, onComplete }: TypewriterProps) {
     const [displayedText, setDisplayedText] = useState('')
 
     useEffect(() => {
@@ -28,5 +28,11 @@ export function Typewriter({ text, speed = 15, onComplete }: TypewriterProps) {
         return () => clearInterval(interval)
     }, [text, speed, onComplete])
 
-    return <span>{displayedText}</span>
+    return (
+        <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {displayedText}
+            </ReactMarkdown>
+        </div>
+    )
 }

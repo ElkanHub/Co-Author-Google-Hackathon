@@ -66,7 +66,7 @@ export function AISidebar({ className }: AISidebarProps) {
                             )}
 
                             {/* Content */}
-                            <div className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+                            <div>
                                 <Typewriter text={card.content} speed={10} />
                             </div>
                         </div>
