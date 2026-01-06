@@ -67,7 +67,7 @@ export function AISidebar({ className }: AISidebarProps) {
 
                             {/* Content */}
                             <div>
-                                <Typewriter text={card.content} speed={card.fromDb ? 0.5 : 5} />
+                                <Typewriter text={card.content} speed={card.fromDb ? 0.1 : 10} />
                             </div>
 
                             {/* Actions */}
