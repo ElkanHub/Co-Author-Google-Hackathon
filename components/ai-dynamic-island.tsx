@@ -26,7 +26,7 @@ export function AIDynamicIsland({ className }: { className?: string }) {
                     layout
                     style={{ borderRadius: 32 }}
                     animate={{
-                        width: isVoiceActive ? 'auto' : isWriting ? 220 : isThinking ? 180 : 150,
+                        width: isVoiceActive ? 'auto' : isWriting ? 220 : isThinking ? 180 : isPaused ? 200 : 150,
                         height: isVoiceActive ? 52 : 44,
                     }}
                     transition={{
