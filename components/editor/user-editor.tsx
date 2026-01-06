@@ -114,31 +114,61 @@ export function UserEditor({ documentId }: UserEditorProps) {
         setContextMenu({ x: e.clientX, y: e.clientY })
     }, [])
 
-    const handleAIAction = async (action: string) => {
+    const handleAction = async (action: string) => {
         if (!editor) return
 
+        // Standard Actions
+        if (action === 'copy') {
+            const { empty } = editor.state.selection
+            if (!empty) {
+                const text = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, ' ')
+                navigator.clipboard.writeText(text)
+            }
+            return
+        }
+        if (action === 'cut') {
+            const { empty } = editor.state.selection
+            if (!empty) {
+                const text = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, ' ')
+                await navigator.clipboard.writeText(text)
+                editor.commands.deleteSelection()
+            }
+            return
+        }
+        if (action === 'paste') {
+            try {
+                const text = await navigator.clipboard.readText()
+                if (text) editor.commands.insertContent(text)
+            } catch (err) {
+                console.error('Failed to read clipboard', err)
+                // Maybe show a toast that permissions are needed?
+            }
+            return
+        }
+        if (action === 'select-all') {
+            editor.commands.selectAll()
+            return
+        }
+
+        // AI Actions
         const { from, to, empty } = editor.state.selection
         const selectionText = editor.state.doc.textBetween(from, to, ' ')
 
         // Get some surrounding context if selection is small, or just whole doc
         // For simplicity, let's grab the paragraph
-        const context = editor.getText() // simplified, sending full text might be too much for long docs, but ok for now
+        const context = editor.getText()
 
         if (empty && !selectionText) {
             // Maybe notify user?
-            console.log("Empty selection")
+            console.log("Empty selection for AI action")
+            return
         }
 
         // Optimistically add a "Thinking..." card?
-        // Or just let the user wait. A toast or loading indicator would be nice.
-        // For now, let's just do the request.
-
-        // But better UX: Add a "Writing" card placeholder? 
-        // Let's just create the thinking card immediately
         const tempId = uuidv4()
         addCard({
             id: tempId,
-            type: 'action', // placeholder
+            type: 'action',
             reason: `Action: ${action}`,
             content: 'Thinking...',
             timestamp: new Date(),
@@ -197,7 +227,7 @@ export function UserEditor({ documentId }: UserEditorProps) {
                         x={contextMenu.x}
                         y={contextMenu.y}
                         onClose={() => setContextMenu(null)}
-                        onAction={handleAIAction}
+                        onAction={handleAction}
                     />
                 )}
             </div>
