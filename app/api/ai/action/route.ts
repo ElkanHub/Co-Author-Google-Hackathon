@@ -15,20 +15,20 @@ export async function POST(req: NextRequest) {
 
       Generate a helpful response formatted as a JSON object matching this structure:
       {
-         "type": "suggestion" | "analysis" | "citation" | "feedback",
+         "type": "suggestion" | "analysis" | "citation" | "feedback" | "action",
          "reason": "Brief explanation of why you generated this",
          "content": "The content of your response (e.g. the paraphrased text, citation, or analysis) in Markdown."
       }
 
       Specific Instructions per Action:
-      - Cite: Provide a proper citation (APA/MLA style) or suggest where to find one. Type: "citation".
-      - Paraphrase: Rewrite the text to be clearer and more academic. Type: "suggestion".
-      - Summarize: Provide a concise summary. Type: "analysis".
-      - Expand: expand on the concepts in the text. Type: "suggestion".
-      - Analyze: Analyze the arguments/logic. Type: "analysis".
-      - Counterarguments: Provide potential counterarguments. Type: "feedback".
-      - Suggest sources: Suggest real or likely sources for this claim. Type: "citation".
-      - Define terms: Define key technical terms found in the text. Type: "analysis".
+      - Cite: Provide a proper citation (APA/MLA style) or suggest where to find one. Type: "action".
+      - Paraphrase: Rewrite the text to be clearer and more academic. Type: "action".
+      - Summarize: Provide a concise summary. Type: "action".
+      - Expand: expand on the concepts in the text. Type: "action".
+      - Analyze: Analyze the arguments/logic. Type: "action".
+      - Counterarguments: Provide potential counterarguments. Type: "action".
+      - Suggest sources: Suggest real or likely sources for this claim. Type: "action".
+      - Define terms: Define key technical terms found in the text. Type: "action".
     `;
 
         const result = await model.generateContent(systemPrompt);
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
             console.error("Failed to parse JSON", textResponse);
             // Fallback
             generation = {
-                type: 'analysis',
+                type: 'action',
                 reason: 'Error parsing AI response',
                 content: textResponse
             };

@@ -6,7 +6,7 @@ type VoiceState = 'inactive' | 'active'
 
 export interface AICard {
     id: string
-    type: 'suggestion' | 'analysis' | 'citation' | 'feedback'
+    type: 'suggestion' | 'analysis' | 'citation' | 'feedback' | 'action'
     content: string
     reason?: string
     timestamp: Date

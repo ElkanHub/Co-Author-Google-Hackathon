@@ -138,7 +138,8 @@ export function UserEditor({ documentId }: UserEditorProps) {
         const tempId = uuidv4()
         addCard({
             id: tempId,
-            type: 'analysis', // placeholder
+            type: 'action', // placeholder
+            reason: `Action: ${action}`,
             content: 'Thinking...',
             timestamp: new Date(),
             fromDb: false
@@ -165,8 +166,8 @@ export function UserEditor({ documentId }: UserEditorProps) {
 
             addCard({
                 id: uuidv4(),
-                type: data.type,
-                reason: data.reason,
+                type: 'action', // Force action type
+                reason: `Action: ${action} - ${data.reason}`,
                 content: data.content,
                 timestamp: new Date(),
                 fromDb: false

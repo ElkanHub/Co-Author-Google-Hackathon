@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { cn } from "@/lib/utils"
 import { useAIStore, AICard } from "@/store/use-ai-store"
-import { Sparkles, BookOpen, MessageSquare, AlertCircle, Copy, Trash2, Check, Search, X } from "lucide-react"
+import { Sparkles, BookOpen, MessageSquare, AlertCircle, Copy, Trash2, Check, Search, X, Zap } from "lucide-react"
 import { Typewriter } from "@/components/ui/typewriter"
 import { marked } from "marked"
 
@@ -16,6 +16,7 @@ function CardIcon({ type }: { type: AICard['type'] }) {
         case 'suggestion': return <Sparkles className="w-4 h-4 text-purple-400" />
         case 'citation': return <BookOpen className="w-4 h-4 text-blue-400" />
         case 'analysis': return <AlertCircle className="w-4 h-4 text-orange-400" />
+        case 'action': return <Zap className="w-4 h-4 text-yellow-500" />
         default: return <MessageSquare className="w-4 h-4 text-zinc-400" />
     }
 }
@@ -25,7 +26,7 @@ export function AISidebar({ className }: AISidebarProps) {
     const [searchQuery, setSearchQuery] = useState('')
     const [activeFilter, setActiveFilter] = useState('All')
 
-    const filters = ['All', 'Suggestion', 'Citation', 'Analysis', 'Feedback']
+    const filters = ['All', 'Action', 'Suggestion', 'Citation', 'Analysis', 'Feedback']
 
     const filteredCards = cards.filter(card => {
         const matchesType = activeFilter === 'All' || card.type === activeFilter.toLowerCase()
@@ -140,7 +141,9 @@ function AICardItem({ card }: { card: AICard }) {
                         <CardIcon type={card.type} />
                     </div>
                     <span className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
-                        {card.type}
+                        {card.type === 'action' && card.reason?.startsWith('Action:')
+                            ? card.reason.split('-')[0].replace('Action:', '').trim()
+                            : card.type}
                     </span>
                 </div>
 
