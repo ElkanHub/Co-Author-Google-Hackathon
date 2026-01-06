@@ -30,6 +30,32 @@ export function useDocumentSync(editor: Editor | null, documentId: string | null
 
     const activeId = documentId || localDocId;
 
+    // Fetch Content on Load
+    useEffect(() => {
+        if (!activeId || !editor || editor.getText().length > 0) return;
+
+        const fetchContent = async () => {
+            const { data, error } = await supabase
+                .from('documents')
+                .select('content')
+                .eq('id', activeId)
+                .single();
+
+            if (data?.content) {
+                console.log('Restoring document content...');
+                // queueMicrotask to ensure editor is ready? 
+                // Tiptap handles this well usually.
+                try {
+                    editor.commands.setContent(data.content);
+                } catch (e) {
+                    console.error("Failed to set content", e);
+                }
+            }
+        };
+
+        fetchContent();
+    }, [activeId, editor, supabase]);
+
     // Function to perform the actual upsert
     const syncToSupabase = useCallback(async (content: any, plainText: string) => {
         if (!activeId) return;
