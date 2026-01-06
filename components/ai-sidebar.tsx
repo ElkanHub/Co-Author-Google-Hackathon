@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { useAIStore, AICard } from "@/store/use-ai-store"
 import { Sparkles, BookOpen, MessageSquare, AlertCircle, Copy, Trash2, Check } from "lucide-react"
 import { Typewriter } from "@/components/ui/typewriter"
+import { marked } from "marked"
 
 interface AISidebarProps {
     className?: string
@@ -52,10 +53,25 @@ function AICardItem({ card }: { card: AICard }) {
     const { deleteCard } = useAIStore()
     const [hasCopied, setHasCopied] = useState(false)
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(card.content)
-        setHasCopied(true)
-        setTimeout(() => setHasCopied(false), 2000)
+    const handleCopy = async () => {
+        try {
+            const html = await marked.parse(card.content)
+            const typeHtml = "text/html"
+            const typeText = "text/plain"
+            const blobHtml = new Blob([html], { type: typeHtml })
+            const blobText = new Blob([card.content], { type: typeText })
+            const data = [new ClipboardItem({ [typeHtml]: blobHtml, [typeText]: blobText })]
+
+            await navigator.clipboard.write(data)
+            setHasCopied(true)
+            setTimeout(() => setHasCopied(false), 2000)
+        } catch (err) {
+            console.error('Failed to copy rich text:', err)
+            // Fallback to plain text
+            navigator.clipboard.writeText(card.content)
+            setHasCopied(true)
+            setTimeout(() => setHasCopied(false), 2000)
+        }
     }
 
     return (
