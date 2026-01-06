@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { cn } from "@/lib/utils"
 import { useAIStore, AICard } from "@/store/use-ai-store"
-import { Sparkles, BookOpen, MessageSquare, AlertCircle, Copy, Trash2, Check } from "lucide-react"
+import { Sparkles, BookOpen, MessageSquare, AlertCircle, Copy, Trash2, Check, Search, X } from "lucide-react"
 import { Typewriter } from "@/components/ui/typewriter"
 import { marked } from "marked"
 
@@ -22,25 +22,80 @@ function CardIcon({ type }: { type: AICard['type'] }) {
 
 export function AISidebar({ className }: AISidebarProps) {
     const { cards } = useAIStore()
+    const [searchQuery, setSearchQuery] = useState('')
+    const [activeFilter, setActiveFilter] = useState('All')
+
+    const filters = ['All', 'Suggestion', 'Citation', 'Analysis', 'Feedback']
+
+    const filteredCards = cards.filter(card => {
+        const matchesType = activeFilter === 'All' || card.type === activeFilter.toLowerCase()
+        const matchesSearch = card.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            card.reason?.toLowerCase().includes(searchQuery.toLowerCase())
+        return matchesType && matchesSearch
+    })
 
     return (
         <div className={cn("flex flex-col h-full bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800", className)}>
-            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-10">
-                <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
-                    <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Intelligence Stream</h2>
+            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-10 space-y-3">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-500" />
+                        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Intelligence Stream</h2>
+                    </div>
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Live</span>
                 </div>
-                <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Live</span>
+
+                {/* Search */}
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-zinc-400" />
+                    <input
+                        type="text"
+                        placeholder="Search cards..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 rounded-lg pl-8 pr-8 py-2 text-xs text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                </div>
+
+                {/* Filters */}
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none mask-fade-right">
+                    {filters.map(filter => (
+                        <button
+                            key={filter}
+                            onClick={() => setActiveFilter(filter)}
+                            className={cn(
+                                "px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors whitespace-nowrap border",
+                                activeFilter === filter
+                                    ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
+                                    : "bg-white dark:bg-zinc-900 text-zinc-500 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                            )}
+                        >
+                            {filter}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div className="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
-                {cards.length === 0 ? (
+                {filteredCards.length === 0 ? (
                     <div className="rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 p-8 text-center bg-white dark:bg-zinc-950/30 mt-8">
-                        <p className="text-sm text-zinc-500 mb-2">Build your AI workflow here.</p>
-                        <p className="text-xs text-zinc-400">Start writing, and I will generate suggestions automatically.</p>
+                        <p className="text-sm text-zinc-500 mb-2">
+                            {searchQuery ? "No matching cards found." : "Build your AI workflow here."}
+                        </p>
+                        <p className="text-xs text-zinc-400">
+                            {searchQuery ? "Try a different search term or filter." : "Start writing, and I will generate suggestions automatically."}
+                        </p>
                     </div>
                 ) : (
-                    cards.map((card) => (
+                    filteredCards.map((card) => (
                         <AICardItem key={card.id} card={card} />
                     ))
                 )}
