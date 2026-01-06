@@ -10,6 +10,7 @@ export interface AICard {
     content: string
     reason?: string
     timestamp: Date
+    fromDb?: boolean
     actions?: {
         label: string
         onClick: () => void
@@ -70,7 +71,8 @@ export const useAIStore = create<AIStore>((set, get) => ({
                 type: d.type as any,
                 content: d.content,
                 reason: d.reason,
-                timestamp: new Date(d.created_at)
+                timestamp: new Date(d.created_at),
+                fromDb: true
                 // Actions aren't preserved in DB yet, but that's okay for history
             }))
             set({ cards: loadedCards })
