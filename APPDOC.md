@@ -13,14 +13,18 @@ Co-Author is an advanced AI-powered writing assistant designed to act as a "disc
 ## Key Features
 
 ### 1. The Mature AI Engine (7-Layer Stack)
-The core intelligence of the application runs on a sophisticated decision funnel:
+The core intelligence of the application runs on a sophisticated decision funnel, now tuned for proactive collaboration ("VALUE IS INTELLIGENCE"):
 1.  **Layer 1: Keystroke Isolation (3.5s)** - The AI is blind while you type. It only "wakes up" 3.5 seconds after your last keystroke.
-2.  **Layer 2: Structural Change Detection** - Ignores minor edits. Only analyzes if ~30 words have changed or a major section is completed.
+2.  **Layer 2: Structural Change Detection** - Analyzes text if **15 words** have changed (tuned for responsiveness).
 3.  **Layer 3: Local Intent Extraction** - Determines if the user is in "Drafting", "Polishing", or "Researching" mode.
-4.  **Layer 4: Contribution Cooldown (60s)** - Enforced silence. The AI defaults to a 1-minute cooldown between unsolicited suggestions.
-5.  **Layer 5: Contribution Budgeting** - Limits proactive interruptions to 3 per session to prevent noise. Includes a **Feedback Protocol** (`Yes/No` cards) for high-stakes interventions.
-6.  **Layer 6: Interruption Justification** - The AI must internally justify *why* it is interrupting. "Silence is Intelligence."
-7.  **Layer 7: Shadow Prompting** - Users can type `[prompt]` on a new line. The AI detects this pattern instantly (1s debounce) and executes the command as an Action Card.
+4.  **Layer 4: Contribution Cooldown (30s)** - Enforced silence. Defaults to a 30-second cooldown between unsolicited suggestions.
+5.  **Layer 5: Contribution Budgeting** - Limits proactive interruptions. Includes a **Feedback Protocol** (`Yes/No` cards) for high-stakes interventions.
+6.  **Layer 6: Interruption Justification** - The AI must justify *why* it is interrupting. The philosophy is **"VALUE IS INTELLIGENCE"**.
+7.  **Layer 7: Shadow Prompting** - Users can type `[prompt]` on a new line. The AI detects this instantly (1s debounce) and executes it.
+
+**Dynamic Island & Controls:**
+- **Pause/Resume**: A global toggle on the Dynamic Island instantly halts all AI observation (including Shadow Prompts).
+- **Welcome Greeting**: New sessions initialize with a system check to confirm readiness.
 
 ### 2. Security & Safety Layer (`lib/security.ts`)
 - **Input Sanitization**: Trims and limits inputs to 100k characters to prevent DoS attacks.

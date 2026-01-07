@@ -1,6 +1,6 @@
 # Co-Author: The Disciplined AI Writing Partner
 
-Co-Author is an experimental AI writing environment that treats the AI not as a tool, but as a **disciplined colleague**. It doesn't spam you with autocomplete suggestions. Instead, it observes your writing, thinks silently, and only interrupts when it has something valuable to say - An Autonomous co-author.
+Co-Author is an experimental AI writing environment that treats the AI not as a tool, but as a **disciplined colleague**. It doesn't spam you with autocomplete suggestions. Instead, it observes your writing, thinks silently, and only interrupts when it has something valuable to say - **An Autonomous co-author**.
 
 ![Co-Author Interface](./header-image.png)
 
@@ -9,9 +9,10 @@ Co-Author is an experimental AI writing environment that treats the AI not as a 
 ###  The Mature AI (7-Layer Stack)
 We've engineered "restraint" into the AI. It uses a 7-layer decision stack to respect your flow:
 - **Silence is Default**: It waits 3.5s after you stop typing before even *thinking*.
-- **Justification**: It must justify to itself *why* a suggestion is worth breaking your concentration.
-- **Cooldowns**: It won't bug you more than once every 60 seconds.
-- **Shadow Prompting**: Want manual control? Just type `[Explain this concept]` on a new line, and the AI will jump in instantly.
+- **Justification**: It must justify to itself *why* a suggestion is worth breaking your concentration ("Value is Intelligence").
+- **Cooldowns**: It won't bug you more than once every 30 seconds.
+- **Shadow Prompting**: Want manual control? Just type `[Explain this concept]` on a new line.
+- **Full Control**: Use the **Pause Button** in the Dynamic Island to completely silence the AI when you need deep focus.
 
 ###  Built-in Security
 - **Sanitized Inputs**: Protects against DoS and malformed data.
