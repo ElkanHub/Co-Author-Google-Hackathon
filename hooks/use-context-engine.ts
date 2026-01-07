@@ -37,7 +37,21 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
     // Initial Load
     useEffect(() => {
         if (documentId) {
-            fetchCards(documentId).then(() => setIsLoaded(true));
+            fetchCards(documentId).then(() => {
+                setIsLoaded(true);
+
+                // Welcome Greeting for New Sessions
+                const currentCards = useAIStore.getState().cards;
+                if (currentCards.length === 0) {
+                    saveCard({
+                        id: crypto.randomUUID(),
+                        type: 'suggestion',
+                        content: "**System Online.**\n\nI am ready to co-author. I will observe your writing and only interrupt when necessary.\n\nYou can also use `[Shadow Prompts]` for manual control.",
+                        reason: "System Initialization",
+                        timestamp: new Date()
+                    }, documentId);
+                }
+            });
         }
     }, [documentId, fetchCards]);
 
