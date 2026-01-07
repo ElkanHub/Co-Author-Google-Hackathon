@@ -95,7 +95,7 @@ export function UserEditor({ documentId }: UserEditorProps) {
     const { isSyncing } = useDocumentSync(editor, documentId || null);
 
     // 2. AI Autonomy Loop (The Mature Engine)
-    useContextEngine(editor?.getText() || '', documentId || null, isSyncing);
+    useContextEngine(editor, documentId || null, isSyncing);
 
     // Cleanup
     useEffect(() => {

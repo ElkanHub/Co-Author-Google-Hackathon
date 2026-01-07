@@ -1,13 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAIStore, AICard } from '@/store/use-ai-store';
+
+import { useState, useEffect, useRef } from 'react';
+import { useAIStore } from '@/store/use-ai-store';
+import { Editor } from '@tiptap/react';
 
 /**
  * useContextEngine
  * 
  * The "Mature AI" Engine (Layers 1-5).
  * Replaces the basic useAIAgent loop.
+ * 
+ * OPTIMIZED: Uses editor instance directly to avoid serializing content
+ * on every render/keystroke.
  */
-export function useContextEngine(content: string, documentId: string | null, isSyncing: boolean) {
+export function useContextEngine(editor: Editor | null, documentId: string | null, isSyncing: boolean) {
     const { isPaused, setWriterState, cards, saveCard, fetchCards } = useAIStore();
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -36,39 +41,52 @@ export function useContextEngine(content: string, documentId: string | null, isS
         }
     }, [documentId, fetchCards]);
 
-    // Layer 1: Detect Typing Intent
+    // Layer 1: Detect Typing Intent via Event Listener
+    // This runs outside the render loop!
     useEffect(() => {
-        setIsTyping(true);
-        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        if (!editor) return;
 
-        // 3.5s Hard Debounce (Layer 1)
-        typingTimeoutRef.current = setTimeout(() => {
-            setIsTyping(false);
-        }, 3500);
+        const handleUpdate = () => {
+            // IMEMDIATELY set typing state (Visual feedback protection)
+            // But we don't force a React render unless it changed
+            if (!isTyping) setIsTyping(true);
+
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+            // 3.5s Hard Debounce (Layer 1)
+            typingTimeoutRef.current = setTimeout(() => {
+                setIsTyping(false);
+                // Trigger analysis check when typing stops
+                triggerAnalysis();
+            }, 3500);
+        };
+
+        editor.on('update', handleUpdate);
 
         return () => {
+            editor.off('update', handleUpdate);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         };
-    }, [content]);
+    }, [editor, isTyping]); // Re-bind if editor changes
 
-    // Main Engine Loop
-    useEffect(() => {
+    // The Analysis Trigger (Called when idle)
+    const triggerAnalysis = () => {
         // Gates:
         // 0. System paused or not loaded
-        if (isPaused || !documentId || !isLoaded) return;
+        if (isPaused || !documentId || !isLoaded || !editor) return;
 
-        // 1. Isolation: Never reason while typing
-        if (isTyping) {
-            setWriterState('idle'); // Ensure we don't look like we're thinking
-            return;
-        }
+        // 1. Isolation: Never reason while typing (redundant check)
+        // if (isTyping) return; // We are called by the timeout clearing typing, so we are safe.
+
+        // Get Content ONLY NOW (Expensive operation deferred until idle)
+        const content = editor.getText();
 
         // 2. Structure: Only wake if meaningful change triggered
         const currentWordCount = content.split(/\s+/).length;
         const diff = Math.abs(currentWordCount - structureRef.current.lastAnalyzedLength);
 
-        // Threshold: ~50 words difference or massive deletion
-        // Also initial boot
+        // Threshold: ~30 words difference or massive deletion
+        // Also initial boot (diff could be 0 but length > 0 if first load)
         const isMeaningfulChange = diff > 30 || (structureRef.current.lastAnalyzedLength === 0 && currentWordCount > 50);
 
         if (!isMeaningfulChange) return;
@@ -81,19 +99,16 @@ export function useContextEngine(content: string, documentId: string | null, isS
         }
 
         // 5. Budget: Max 3 auto-generations per session (for this demo/hackathon scope)
-        // Reset budget if user actively interacts? For now, hard limit.
         if (sessionRef.current.budgetUsed >= 3) {
             setWriterState('idle'); // "Observing"
             return;
         }
 
-        // If gates passed, schedule analysis
+        // If gates passed, schedule analysis API call
+        // We use a small buffer just to ensure UI is settled
         if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
 
         analysisTimeoutRef.current = setTimeout(async () => {
-            // Re-check gates just in case
-            if (isTyping) return;
-
             setWriterState('thinking');
 
             // Update Snapshot
@@ -121,7 +136,7 @@ export function useContextEngine(content: string, documentId: string | null, isS
                         await saveCard({
                             id: feedbackId,
                             type: 'feedback',
-                            content: `I have an idea for **${intentData.section}**. ${intentData.intent}. Shall I proceed?`,
+                            content: `I have an idea for ** ${intentData.section} **.${intentData.intent}.Shall I proceed ? `,
                             timestamp: new Date(),
                             actions: [
                                 {
@@ -159,13 +174,9 @@ export function useContextEngine(content: string, documentId: string | null, isS
                 setWriterState('idle');
             }
 
-        }, 1000); // Small buffer after typing stops
+        }, 100);
 
-        return () => {
-            if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
-        };
-
-    }, [isTyping, content, documentId, isLoaded, isPaused, cards, saveCard, setWriterState]); // Dependencies
+    };
 
     // Helper: Generate Content
     const generateContent = async (intent: string, stage: string, context: string) => {
@@ -192,5 +203,13 @@ export function useContextEngine(content: string, documentId: string | null, isS
         }
     };
 
+    // Cleanup
+    useEffect(() => {
+        return () => {
+            if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
+        };
+    }, []);
+
     return {};
 }
+

@@ -8,6 +8,8 @@ export async function POST(req: NextRequest) {
         // Construct a specific prompt based on the action
         const systemPrompt = `
       You are an expert academic co-author.
+      Adapt your English to the user’s proficiency level (simple, standard, or advanced).
+      Do not use complex or academic language unless it is clear from the user’s writing that they are an advanced English speaker.
       The user wants you to perform the following action: "${action}".
       
       Target Text: "${selection}"
