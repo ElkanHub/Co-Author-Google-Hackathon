@@ -213,6 +213,9 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
     const lastShadowPromptRef = useRef<string | null>(null);
 
     const checkShadowPrompt = async (content: string) => {
+        // Paused Guard
+        if (isPausedRef.current) return;
+
         // Regex: Newline (or start), followed by [prompt], optional whitespace
         // Captures the content inside []
         const regex = /(?:^|\n)\[(.*?)\]/g;
@@ -305,6 +308,15 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
             setWriterState('idle');
         }
     };
+
+    // Resume Check: When unpaused, scan immediately
+    useEffect(() => {
+        if (!isPaused && editor) {
+            const text = editor.getText();
+            checkShadowPrompt(text);
+            triggerAnalysis();
+        }
+    }, [isPaused, editor]);
 
     // Cleanup
     useEffect(() => {
