@@ -1,11 +1,23 @@
 import { model } from '@/lib/ai/google';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { validateRequest } from '@/lib/security';
+
 export async function POST(req: NextRequest) {
     try {
         const { text, context, previousSuggestions } = await req.json();
 
-        if (!text && !context) {
+        // Security Check
+        const { isValid, error, sanitizedText } = validateRequest(text || context);
+        if (!isValid) {
+            return NextResponse.json({ error }, { status: 400 });
+        }
+
+        // Use sanitized text
+        const safeText = sanitizedText || "";
+        const safeContext = validateRequest(context).sanitizedText || "";
+
+        if (!safeText && !safeContext) {
             return NextResponse.json({ error: 'No text provided' }, { status: 400 });
         }
 

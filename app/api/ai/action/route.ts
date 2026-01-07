@@ -1,9 +1,23 @@
 import { model } from '@/lib/ai/google';
 import { NextRequest, NextResponse } from 'next/server';
+import { validateRequest } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
     try {
         const { action, selection, context } = await req.json();
+
+        // Security Check
+        const actionCheck = validateRequest(action);
+        const selectionCheck = validateRequest(selection);
+        const contextCheck = validateRequest(context);
+
+        if (!actionCheck.isValid) return NextResponse.json({ error: actionCheck.error }, { status: 400 });
+        if (!selectionCheck.isValid) return NextResponse.json({ error: selectionCheck.error }, { status: 400 });
+        if (!contextCheck.isValid) return NextResponse.json({ error: contextCheck.error }, { status: 400 });
+
+        const safeAction = actionCheck.sanitizedText;
+        const safeSelection = selectionCheck.sanitizedText;
+        const safeContext = contextCheck.sanitizedText;
 
         // Construct a specific prompt based on the action
         const systemPrompt = `

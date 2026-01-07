@@ -1,9 +1,20 @@
 import { model } from '@/lib/ai/google';
 import { NextRequest, NextResponse } from 'next/server';
+import { validateRequest } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
     try {
         const { intent, text, stage } = await req.json();
+
+        // Security Check
+        const textCheck = validateRequest(text);
+        const intentCheck = validateRequest(intent);
+
+        if (!textCheck.isValid) return NextResponse.json({ error: textCheck.error }, { status: 400 });
+        if (!intentCheck.isValid) return NextResponse.json({ error: intentCheck.error }, { status: 400 });
+
+        const safeText = textCheck.sanitizedText;
+        const safeIntent = intentCheck.sanitizedText;
 
         const prompt = `
       You are an autonomous co-author. The user is currently in the "${stage}" stage.
