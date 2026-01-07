@@ -41,6 +41,8 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
         }
     }, [documentId, fetchCards]);
 
+    const shadowTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     // Layer 1: Detect Typing Intent via Event Listener
     // This runs outside the render loop!
     useEffect(() => {
@@ -52,13 +54,20 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
             if (!isTyping) setIsTyping(true);
 
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            if (shadowTimeoutRef.current) clearTimeout(shadowTimeoutRef.current);
 
-            // 3.5s Hard Debounce (Layer 1)
+            // 3.5s Hard Debounce (Layer 1) - For deep analysis
             typingTimeoutRef.current = setTimeout(() => {
                 setIsTyping(false);
                 // Trigger analysis check when typing stops
                 triggerAnalysis();
             }, 3500);
+
+            // 1.0s Fast Debounce - For Shadow Prompts (User demands speed here)
+            shadowTimeoutRef.current = setTimeout(() => {
+                const text = editor.getText();
+                checkShadowPrompt(text);
+            }, 1000);
         };
 
         editor.on('update', handleUpdate);
@@ -66,6 +75,7 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
         return () => {
             editor.off('update', handleUpdate);
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            if (shadowTimeoutRef.current) clearTimeout(shadowTimeoutRef.current);
         };
     }, [editor, isTyping]); // Re-bind if editor changes
 
