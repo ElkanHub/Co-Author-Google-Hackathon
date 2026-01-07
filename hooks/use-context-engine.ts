@@ -109,16 +109,16 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
         const currentWordCount = content.split(/\s+/).length;
         const diff = Math.abs(currentWordCount - structureRef.current.lastAnalyzedLength);
 
-        // Threshold: ~30 words difference or massive deletion
+        // Threshold: ~15 words difference or massive deletion
         // Also initial boot (diff could be 0 but length > 0 if first load)
-        const isMeaningfulChange = diff > 30 || (structureRef.current.lastAnalyzedLength === 0 && currentWordCount > 50);
+        const isMeaningfulChange = diff > 15 || (structureRef.current.lastAnalyzedLength === 0 && currentWordCount > 20);
 
         if (!isMeaningfulChange) return;
 
-        // 4. Cooldown: Minimum 60s between generations
+        // 4. Cooldown: Minimum 30s between generations
         const now = Date.now();
         const timeSinceLast = now - sessionRef.current.lastGenerationTime;
-        if (timeSinceLast < 60000 && sessionRef.current.lastGenerationTime !== 0) {
+        if (timeSinceLast < 30000 && sessionRef.current.lastGenerationTime !== 0) {
             return;
         }
 
