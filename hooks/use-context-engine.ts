@@ -16,6 +16,10 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
     const { isPaused, setWriterState, cards, saveCard, fetchCards } = useAIStore();
     const [isLoaded, setIsLoaded] = useState(false);
 
+    // Layer 0: Pause State Ref (to avoid stale closures in event listeners)
+    const isPausedRef = useRef(isPaused);
+    useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+
     // Layer 1: Isolation (Typing State)
     const [isTyping, setIsTyping] = useState(false);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -97,7 +101,7 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
     const triggerAnalysis = () => {
         // Gates:
         // 0. System paused or not loaded
-        if (isPaused || !documentId || !isLoaded || !editor) return;
+        if (isPausedRef.current || !documentId || !isLoaded || !editor) return;
 
         // 1. Isolation: Never reason while typing (redundant check)
         // if (isTyping) return; // We are called by the timeout clearing typing, so we are safe.
