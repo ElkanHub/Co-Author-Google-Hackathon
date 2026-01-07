@@ -1,6 +1,8 @@
 'use client'
 
 import { useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { AIDynamicIsland } from "@/components/ai-dynamic-island";
 import { UserEditor } from "@/components/editor/user-editor";
 import { AISidebar } from "@/components/ai-sidebar";
@@ -13,6 +15,47 @@ import {
 export default function EditorPage() {
     const params = useParams()
     const documentId = params?.id as string
+    const [title, setTitle] = useState("Autonomous Research")
+    const [isEditing, setIsEditing] = useState(false)
+    const supabase = createClient()
+
+    useEffect(() => {
+        if (!documentId) return
+
+        const fetchTitle = async () => {
+            const { data } = await supabase
+                .from('documents')
+                .select('title')
+                .eq('id', documentId)
+                .single()
+
+            if (data?.title) {
+                setTitle(data.title)
+            }
+        }
+        fetchTitle()
+    }, [documentId])
+
+    const handleTitleSave = async () => {
+        setIsEditing(false)
+        if (!documentId) return
+
+        if (!title.trim()) {
+            setTitle("Autonomous Research") // Revert if empty
+            return
+        }
+
+        await supabase
+            .from('documents')
+            .update({ title: title })
+            .eq('id', documentId)
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleTitleSave()
+        }
+    }
 
     return (
         <div className="h-screen w-full bg-zinc-50 dark:bg-black overflow-hidden font-sans flex flex-col">
@@ -43,7 +86,24 @@ export default function EditorPage() {
                         <header className="relative h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center px-6 justify-between flex-shrink-0">
                             <div className="flex items-center gap-2">
                                 <span className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Co-Author</span>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-medium">Autonomous Research</span>
+                                {isEditing ? (
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        onBlur={handleTitleSave}
+                                        onKeyDown={handleKeyDown}
+                                        className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium border-none focus:ring-1 focus:ring-indigo-500 outline-none w-[200px]"
+                                    />
+                                ) : (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-medium hover:text-zinc-900 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors truncate max-w-[200px]"
+                                    >
+                                        {title}
+                                    </button>
+                                )}
                             </div>
 
                             {/* Dynamic Island in Header */}
