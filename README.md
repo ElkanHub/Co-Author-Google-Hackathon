@@ -1,49 +1,52 @@
-# AI Co-Author
+# Co-Author: The Disciplined AI Writing Partner
 
-An intelligent, AI-powered writing assistant designed to augment your workflow without getting in the way.
+Co-Author is an experimental AI writing environment that treats the AI not as a tool, but as a **disciplined colleague**. It doesn't spam you with autocomplete suggestions. Instead, it observes your writing, thinks silently, and only interrupts when it has something valuable to say - An Autonomous co-author.
 
-## Features
+![Co-Author Interface](./header-image.png)
 
-### ✍️ Intelligent Editor
-- **Rich Text Editing**: A smooth, Notion-style writing experience.
-- **Smart Context Menu**: Right-click to access standard tools (Copy, Cut, Paste) and powerful AI actions.
-- **AI Sidebar**: A dedicated "Intelligence Stream" that houses citations, suggestions, and analysis.
+##  Key Features
 
-### 🧠 AI Capabilities
-- **Cite**: Automatically generate citations for claims.
-- **Paraphrase**: Rewrite text for clarity or tone.
-- **Summarize**: Condense complex paragraphs.
-- **Expand**: Flesh out ideas with more detail.
-- **Analyze**: Critique arguments and logic.
-- **Counterarguments**: Spot potential holes in your reasoning.
+###  The Mature AI (7-Layer Stack)
+We've engineered "restraint" into the AI. It uses a 7-layer decision stack to respect your flow:
+- **Silence is Default**: It waits 3.5s after you stop typing before even *thinking*.
+- **Justification**: It must justify to itself *why* a suggestion is worth breaking your concentration.
+- **Cooldowns**: It won't bug you more than once every 60 seconds.
+- **Shadow Prompting**: Want manual control? Just type `[Explain this concept]` on a new line, and the AI will jump in instantly.
 
-### ⚡ Power User Tools
-- **Deep Filtering**: Filter your AI stream by type (Citation, Suggestion, Action, etc.).
-- **Search**: Instantly find past insights in the sidebar.
-- **Responsive Design**: Interfaces that adapt to your viewport.
+###  Built-in Security
+- **Sanitized Inputs**: Protects against DoS and malformed data.
+- **Intent Scanning**: Blocks malicious roleplay and jailbreak attempts.
+
+###  Premium Editor Experience
+- **Distraction-Free**: Minimalist interface focused on your words.
+- **Smart Context Menu**: Right-click for AI powers (Cite, Paraphrase, Expand) or standard tools.
+- **Persistent Sessions**: Your research and AI cards are saved automatically. Rename your session by clicking the title.
 
 ## Getting Started
 
-1.  **Clone the repository**.
+1.  **Clone the repo**
 2.  **Install dependencies**:
     ```bash
     npm install
     ```
-3.  **Set up Environment**:
-    - Create a `.env.local` file.
-    - Add your `GOOGLE_API_KEY` (Gemini) and Supabase credentials.
+3.  **Environment Setup**:
+    Create a `.env` file with:
+    ```
+    GEMINI_API_KEY=your_key_here
+    NEXT_PUBLIC_SUPABASE_URL=your_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+    ```
 4.  **Run Development Server**:
     ```bash
     npm run dev
     ```
-5.  Open [http://localhost:3000](http://localhost:3000).
 
-## Tech Stack
+##  Tech Stack
 - **Framework**: Next.js 14
-- **AI Model**: Google Gemini Pro
+- **AI**: Google Gemini 3 Flash Preview
 - **Editor**: Tiptap
 - **Database**: Supabase
 - **Styling**: Tailwind CSS
 
----
-*Built for the future of writing.*
+## Contributing
+This is a research project exploring Human-AI collaboration dynamics. Feel free to open issues or PRs if you have ideas on how to make the AI even smarter (or quieter!).

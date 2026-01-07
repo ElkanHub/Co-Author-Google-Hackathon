@@ -1,72 +1,70 @@
-# AI Co-Author Application Documentation
+# Co-Author Application Documentation
 
 ## Overview
-AI Co-Author is a next-generation writing assistant that integrates advanced AI capabilities directly into a rich text editor. It features a dual-pane interface with a dedicated "Intelligence Stream" sidebar for real-time AI suggestions, citations, and analysis, along with a powerful context menu for seamless interaction.
+Co-Author is an advanced AI-powered writing assistant designed to act as a "disciplined colleague." Unlike standard AI tools that spam suggestions, Co-Author uses a **7-Layer Maturity Stack** to observe, wait, and only intervene when it has a high-value contribution. It features a real-time collaborative editor (Tiptap), a dedicated AI research space, and a robust security layer.
 
-## Technology Stack
-- **Framework**: Next.js 14 (App Router)
-- **Styling**: Tailwind CSS, Lucide React (Icons)
-- **State Management**: Zustand
-- **Database**: Supabase (PostgreSQL)
-- **Editor**: Tiptap (Headless wrapper around ProseMirror)
-- **AI**: Google Gemini Pro (via `@google/generative-ai`)
-- **Markdown**: `marked` for rendering AI responses
+## core Technology Stack
+- **Frontend**: Next.js 14 (App Router), React, Tailwind CSS, Lucide Icons.
+- **Editor**: Tiptap (Headless, Extensible), Markdown support.
+- **AI**: Google Gemini 3 Flash Preview (via Google Generative AI SDK).
+- **Backend/DB**: Supabase (PostgreSQL) for document storage and vector history.
+- **State Management**: Zustand (Global Store).
+
+## Key Features
+
+### 1. The Mature AI Engine (7-Layer Stack)
+The core intelligence of the application runs on a sophisticated decision funnel:
+1.  **Layer 1: Keystroke Isolation (3.5s)** - The AI is blind while you type. It only "wakes up" 3.5 seconds after your last keystroke.
+2.  **Layer 2: Structural Change Detection** - Ignores minor edits. Only analyzes if ~30 words have changed or a major section is completed.
+3.  **Layer 3: Local Intent Extraction** - Determines if the user is in "Drafting", "Polishing", or "Researching" mode.
+4.  **Layer 4: Contribution Cooldown (60s)** - Enforced silence. The AI defaults to a 1-minute cooldown between unsolicited suggestions.
+5.  **Layer 5: Contribution Budgeting** - Limits proactive interruptions to 3 per session to prevent noise. Includes a **Feedback Protocol** (`Yes/No` cards) for high-stakes interventions.
+6.  **Layer 6: Interruption Justification** - The AI must internally justify *why* it is interrupting. "Silence is Intelligence."
+7.  **Layer 7: Shadow Prompting** - Users can type `[prompt]` on a new line. The AI detects this pattern instantly (1s debounce) and executes the command as an Action Card.
+
+### 2. Security & Safety Layer (`lib/security.ts`)
+- **Input Sanitization**: Trims and limits inputs to 100k characters to prevent DoS attacks.
+- **Malicious Intent Scanning**: actively scans for jailbreak patterns (e.g., "ignore previous instructions") and blocks them with a 400 error.
+- **Route Protection**: integrated into `/api/ai/analyze`, `/api/ai/generate`, and `/api/ai/action`.
+
+### 3. Editor Experience
+- **Notion-style Interface**: Clean, minimalist writing environment.
+- **Context Menu**: Custom right-click menu with standard tools (Copy, Cut, Paste) and a nested **AI Actions** menu (Cite, Paraphrase, Expand, etc.).
+- **Session Renaming**: Click the header title to rename your research session instantly.
+- **Performance**: Optimized engine uses event listeners instead of render loops for zero-latency typing.
+
+### 4. AI Research Space (Sidebar)
+- **Active Cards**: Displays AI suggestions, actions, and feedback requests.
+- **Persistence**: Cards are synced to Supabase and persist across reloads.
+- **Filtering**: Filter capabilities for "All", "Action", "Suggestion", "Citation", etc.
 
 ## Architecture
 
-### Frontend Structure
-- **`app/`**: Contains the Next.js App Router pages and API routes.
-  - `editor/[id]/page.tsx`: Main editor interface.
-  - `api/ai/`: Backend endpoints for AI generation (`generate`) and specific actions (`action`).
-- **`components/`**: Reusable UI components.
-  - **`editor/`**: Editor-specific components.
-    - `user-editor.tsx`: Main Tiptap instance, handles selection and API integration.
-    - `editor-context-menu.tsx`: Custom right-click menu with Standard and AI actions.
-  - **`ai-sidebar.tsx`**: The Intelligence Stream, displaying AI cards.
-  - **`ai-dynamic-island.tsx`**: Visual status indicator for AI processing.
-- **`store/`**: Global state management.
-  - `use-ai-store.ts`: Manages the list of AI cards (`AICard`), adding/removing/updating them.
-  - `use-editor-store.ts`: specific editor state.
+### Directory Structure
+```
+/app
+  /api          # Next.js API Routes (AI endpoints)
+  /editor       # Editor Page & Logic
+/components
+  /editor       # Tiptap components (UserEditor, Toolbar, ContextMenu)
+  /ai-sidebar   # AI Card stream
+/hooks
+  use-context-engine.ts  # The brain (Layers 1-5, 7)
+  use-document-sync.ts   # Supabase synchronization
+/lib
+  /ai           # Gemini SDK setup
+  security.ts   # Security validation logic
+/store
+  use-ai-store.ts      # AI State & Card management
+  use-editor-store.ts  # Editor State
+```
 
-### Key Features & Implementation
+## Security Protocols
+All user inputs flowing to the AI are passed through `validateRequest(text)`.
+- **Sanitization**: Removes null bytes, trims whitespace.
+- **Intent Check**: Rejects known adversarial patterns.
 
-#### 1. Smart Editor
-- **Rich Text Support**: Built on Tiptap, supporting bold, italic, lists, and more.
-- **Context Menu**: 
-  - **Standard Actions**: System-level Copy, Cut, Paste, and Select All.
-  - **AI Submenu**: Nested menu containing specific AI tools (Cite, Paraphrase, Summarize, etc.).
-  - **Viewport Logic**: The menu intelligently adjusts its position (flipping left/right or up/down) to stay visible on screen.
-
-#### 2. Intelligence Stream (Sidebar)
-- **Live AI Cards**: Displays generated content as cards.
-- **Card Types**: 
-  - `Suggestion` (Purple Sparkles)
-  - `Citation` (Blue Book)
-  - `Analysis` (Orange Alert)
-  - `Action` (Yellow Zap) - User-triggered actions.
-- **Search**: Real-time filtering of cards by text content or reasoning.
-- **Filters**: Tag-based filtering (e.g., "Show only Citations").
-- **Typewriter Effect**: AI content streams in character-by-character for a natural feel (disabled for historical/database-loaded content).
-- **Actions**:
-  - **Copy**: Renders Markdown to HTML/Text for clipboard.
-  - **Delete**: Remove individual cards.
-
-#### 3. AI Integration
-- **Context Awareness**: The AI analyzes the user's selected text *and* the surrounding context to generate relevant responses.
-- **Optimistic UI**: "Thinking..." cards appear immediately upon request to reduce perceived latency.
-- **Structured Response**: AI returns JSON with `type`, `reason`, and `content` for precise UI rendering.
-
-#### 4. Data Sync
-- **Supabase**: Documents and AI cards are synced to a Supabase database.
-- **Real-time**: Content updates are debounced and saved automatically.
-
-## Design System
-- **Theme**: Dark/Light mode support (Zinc palette).
-- **Aesthetics**: Clean, minimal interface with glassmorphism effects (`backdrop-blur`).
-- **Scrollbars**: Custom thin, expanded-on-hover scrollbars for a refined look.
-
-## API Endpoints
-- **`POST /api/ai/action`**: Handles specific actions (Cite, Paraphrase, etc.).
-  - Input: `{ action, selection, context }`
-  - Output: `AICard` object.
-- **`POST /api/ai/generate`**: General generation endpoint (currently used for background analysis).
+## Getting Started
+1. `npm install`
+2. Set `GEMINI_API_KEY` and `NEXT_PUBLIC_SUPABASE_URL/KEY` in `.env`.
+3. `npm run dev`
