@@ -114,6 +114,9 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
             // Update Snapshot
             structureRef.current.lastAnalyzedLength = currentWordCount;
 
+            // Layer 7: Check Shadow Prompt
+            await checkShadowPrompt(content);
+
             try {
                 // Layer 6: Justification happens in API
                 const analyzeRes = await fetch('/api/ai/analyze', {
@@ -176,6 +179,78 @@ export function useContextEngine(editor: Editor | null, documentId: string | nul
 
         }, 100);
 
+    };
+
+    // Layer 7: Shadow Prompting
+    const lastShadowPromptRef = useRef<string | null>(null);
+
+    const checkShadowPrompt = async (content: string) => {
+        // Regex: Newline (or start), followed by [prompt], optional whitespace
+        // Captures the content inside []
+        const regex = /(?:^|\n)\[(.*?)\]/g;
+        let match;
+        let lastMatch = null;
+
+        // Find the *last* shadow prompt in the document
+        while ((match = regex.exec(content)) !== null) {
+            lastMatch = match;
+        }
+
+        if (lastMatch) {
+            const promptText = lastMatch[1].trim();
+
+            // Deduplication: If we already processed this exact prompt *recently* (in this session), skip.
+            if (promptText && promptText !== lastShadowPromptRef.current) {
+                lastShadowPromptRef.current = promptText;
+
+                // Execute Action
+                await executeShadowAction(promptText, content);
+            }
+        }
+    };
+
+    const executeShadowAction = async (action: string, context: string) => {
+        if (!documentId) return;
+
+        const tempId = crypto.randomUUID();
+        // Optimistic UI
+        await saveCard({
+            id: tempId,
+            type: 'action',
+            reason: `Shadow Prompt: ${action}`,
+            content: 'Thinking...',
+            timestamp: new Date(),
+            fromDb: false
+        }, documentId);
+
+        try {
+            const response = await fetch('/api/ai/action', {
+                method: 'POST',
+                body: JSON.stringify({
+                    action,
+                    selection: action, // For shadow prompt, the selection IS the action text largely
+                    context
+                })
+            });
+
+            if (!response.ok) throw new Error('Shadow action failed');
+            const data = await response.json();
+
+            // Replace with real result
+            useAIStore.getState().removeCard(tempId);
+
+            await saveCard({
+                id: crypto.randomUUID(),
+                type: 'action',
+                reason: `Shadow Prompt: ${action}`,
+                content: data.content,
+                timestamp: new Date()
+            }, documentId);
+
+        } catch (error) {
+            console.error(error);
+            useAIStore.getState().removeCard(tempId);
+        }
     };
 
     // Helper: Generate Content
