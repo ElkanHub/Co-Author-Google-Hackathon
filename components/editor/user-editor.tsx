@@ -145,7 +145,7 @@ export function UserEditor({ documentId }: UserEditorProps) {
             return
         }
         if (action === 'select-all') {
-            editor.commands.selectAll()
+            editor.chain().focus().selectAll().run()
             return
         }
 
@@ -188,19 +188,30 @@ export function UserEditor({ documentId }: UserEditorProps) {
 
             const data = await response.json()
 
-            // Replace/Update the card (actually we just add a new one or we could update)
-            // our store doesn't have updateCard yet easily exposed except by ID, but we have remove
-            // Let's just remove the temp one and add real one
+            // Replace/Update the card
             useAIStore.getState().removeCard(tempId)
 
-            addCard({
-                id: uuidv4(),
-                type: 'action', // Force action type
-                reason: `Action: ${action} - ${data.reason}`,
-                content: data.content,
-                timestamp: new Date(),
-                fromDb: false
-            })
+            if (documentId) {
+                // Persist to DB
+                await useAIStore.getState().saveCard({
+                    id: uuidv4(),
+                    type: 'action',
+                    reason: `Action: ${action} - ${data.reason}`,
+                    content: data.content,
+                    timestamp: new Date(),
+                    fromDb: false
+                }, documentId)
+            } else {
+                // Fallback for no documentId (local only)
+                addCard({
+                    id: uuidv4(),
+                    type: 'action',
+                    reason: `Action: ${action} - ${data.reason}`,
+                    content: data.content,
+                    timestamp: new Date(),
+                    fromDb: false
+                })
+            }
 
         } catch (error) {
             console.error(error)
