@@ -43,7 +43,7 @@ export default function EditorPage() {
                         <header className="relative h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center px-6 justify-between flex-shrink-0">
                             <div className="flex items-center gap-2">
                                 <span className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Co-Author</span>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-medium">Research Session</span>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-medium">Autonomous Research</span>
                             </div>
 
                             {/* Dynamic Island in Header */}

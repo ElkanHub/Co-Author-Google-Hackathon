@@ -41,7 +41,7 @@ export function AISidebar({ className }: AISidebarProps) {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-indigo-500" />
-                        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Intelligence Stream</h2>
+                        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">AI Research Space</h2>
                     </div>
                     <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Live</span>
                 </div>
@@ -185,7 +185,7 @@ function AICardItem({ card }: { card: AICard }) {
 
             {/* Content */}
             <div>
-                <Typewriter text={card.content} speed={card.fromDb ? 0 : 0.1} />
+                <Typewriter text={card.content} speed={card.fromDb ? 0 : 0.5} />
             </div>
 
             {/* Actions */}

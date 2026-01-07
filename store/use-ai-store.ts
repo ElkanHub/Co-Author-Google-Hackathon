@@ -67,15 +67,22 @@ export const useAIStore = create<AIStore>((set, get) => ({
             .order('created_at', { ascending: false })
 
         if (data && data.length > 0) {
-            const loadedCards: AICard[] = data.map((d: any) => ({
-                id: d.id,
-                type: d.type as any,
-                content: d.content,
-                reason: d.reason,
-                timestamp: new Date(d.created_at),
-                fromDb: true
-                // Actions aren't preserved in DB yet, but that's okay for history
-            }))
+            const loadedCards: AICard[] = data.map((d: any) => {
+                let type = d.type;
+                // Workaround: Map 'analysis' back to 'action' if reason indicates it
+                if (type === 'analysis' && (d.reason?.startsWith('Action:') || d.reason?.startsWith('Shadow Prompt:'))) {
+                    type = 'action';
+                }
+
+                return {
+                    id: d.id,
+                    type: type as any,
+                    content: d.content,
+                    reason: d.reason,
+                    timestamp: new Date(d.created_at),
+                    fromDb: true
+                };
+            })
             set({ cards: loadedCards })
         }
     },
@@ -85,10 +92,16 @@ export const useAIStore = create<AIStore>((set, get) => ({
         // Optimistic update
         set((state) => ({ cards: [card, ...state.cards] }))
 
+        // Workaround: Database might not support 'action' type yet. Map to 'analysis'.
+        let dbType = card.type;
+        if (dbType === 'action') {
+            dbType = 'analysis';
+        }
+
         await supabase.from('ai_generations').insert({
             id: card.id,
             document_id: documentId,
-            type: card.type,
+            type: dbType,
             content: card.content,
             reason: card.reason,
             created_at: card.timestamp.toISOString()
