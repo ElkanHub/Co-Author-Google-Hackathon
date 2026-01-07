@@ -21,7 +21,7 @@ import { EditorToolbar } from './editor-toolbar'
 import { FontSize } from './extensions/font-size'
 import { Indent } from './extensions/indent'
 import { ResizableImage } from './extensions/resizable-image'
-import { useAIAgent } from '@/hooks/use-ai-agent';
+import { useContextEngine } from '@/hooks/use-context-engine';
 import { useDocumentSync } from '@/hooks/use-document-sync';
 import { useState, useCallback, useEffect } from 'react'
 import { EditorContextMenu } from './editor-context-menu'
@@ -94,9 +94,8 @@ export function UserEditor({ documentId }: UserEditorProps) {
     // 1. Sync to Supabase
     const { isSyncing } = useDocumentSync(editor, documentId || null);
 
-    // 2. AI Autonomy Loop
-    // We pass the plain text and sync status
-    useAIAgent(editor?.getText() || '', documentId || null, isSyncing);
+    // 2. AI Autonomy Loop (The Mature Engine)
+    useContextEngine(editor?.getText() || '', documentId || null, isSyncing);
 
     // Cleanup
     useEffect(() => {
