@@ -3,13 +3,47 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, MicOff, X, Sparkles, Loader2 } from 'lucide-react'
+import { useLiveApi } from '@/hooks/use-live-api'
 import { useAIStore } from '@/store/use-ai-store'
 import { cn } from '@/lib/utils'
 
-export function AIDynamicIsland({ className }: { className?: string }) {
+const API_KEY = process.env.GEMINI_API_KEY || '';
+
+interface AIDynamicIslandProps {
+    className?: string
+    initialContext?: string
+    onContentGenerated?: (type: string, title: string, content: string) => void
+}
+
+export function AIDynamicIsland({ className, initialContext = "", onContentGenerated }: AIDynamicIslandProps) {
     const { writerState, voiceState, isMuted, toggleMute, setVoiceState, isPaused, togglePause } = useAIStore()
 
+    const { connect, disconnect, isConnected, isSpeaking } = useLiveApi({
+        onToolCall: async (name, args) => {
+            if (name === 'write_to_ai_space' && onContentGenerated) {
+                onContentGenerated(args.type, args.title, args.content);
+            }
+        }
+    });
+
+    // Handle Voice Activation/Deactivation via Store
+    // When store says 'active', we try to connect if not connected
+    // When store says 'inactive', we disconnect if connected
+    React.useEffect(() => {
+        if (voiceState === 'active' && !isConnected) {
+            if (!API_KEY) {
+                alert("Please set GEMINI_API_KEY in .env");
+                setVoiceState('inactive');
+                return;
+            }
+            connect(API_KEY, initialContext);
+        } else if (voiceState === 'inactive' && isConnected) {
+            disconnect();
+        }
+    }, [voiceState, isConnected, connect, disconnect, initialContext, setVoiceState]);
+
     // Derived state for layout variants
+    // Use local isConnected/isSpeaking for more accurate visual feedback
     const isVoiceActive = voiceState === 'active'
     const isWriting = writerState === 'writing'
     const isThinking = writerState === 'thinking'
@@ -71,21 +105,23 @@ export function AIDynamicIsland({ className }: { className?: string }) {
                                         <motion.div
                                             key={i}
                                             animate={{
-                                                height: isMuted ? 4 : [6, 16, 8, 20, 6],
-                                                backgroundColor: isMuted ? "#52525b" : "#34d399"
+                                                height: (isSpeaking && !isMuted) ? [6, 16, 8, 20, 6] : 4,
+                                                backgroundColor: isMuted ? "#52525b" : (isSpeaking ? "#34d399" : "#10b981")
                                             }}
                                             transition={{
                                                 repeat: isMuted ? 0 : Infinity,
-                                                duration: isMuted ? 0.3 : 0.8,
+                                                duration: (isSpeaking && !isMuted) ? 0.4 : 0.5,
                                                 ease: "easeInOut",
-                                                delay: isMuted ? 0 : i * 0.1
+                                                delay: i * 0.05
                                             }}
                                             className="w-1 rounded-full"
                                         />
                                     ))}
                                 </div>
 
-                                <span className="text-sm font-medium text-zinc-200 shrink-0">Listening</span>
+                                <span className="text-sm font-medium text-zinc-200 shrink-0">
+                                    {isSpeaking ? "Speaking..." : "Listening..."}
+                                </span>
 
                                 {/* Divider */}
                                 <div className="w-px h-4 bg-zinc-800 shrink-0" />

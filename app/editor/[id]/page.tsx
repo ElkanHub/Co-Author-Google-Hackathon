@@ -11,7 +11,7 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import { VoiceAgent } from "@/components/voice-agent"
+
 
 export default function EditorPage() {
     const params = useParams()
@@ -136,7 +136,11 @@ export default function EditorPage() {
                             </div>
 
                             {/* Dynamic Island in Header */}
-                            <AIDynamicIsland className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+                            <AIDynamicIsland
+                                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                                initialContext={"Title: " + title}
+                                onContentGenerated={handleWriteToAiSpace}
+                            />
 
                             <div className="flex items-center gap-4">
                                 {/* Future tools */}
@@ -153,11 +157,6 @@ export default function EditorPage() {
                 </ResizablePanel>
 
             </ResizablePanelGroup>
-            {/* Voice Agent Overlay */}
-            <VoiceAgent
-                initialContext={"Title: " + title} // We will improve this to pass actual editor content later
-                onContentGenerated={handleWriteToAiSpace}
-            />
         </div>
     );
 }
