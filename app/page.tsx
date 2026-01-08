@@ -12,6 +12,7 @@ interface Document {
   id: string
   title: string
   updated_at: string
+  last_active_at: string
   plain_text?: string
 }
 
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortOption, setSortOption] = useState<'updated_at' | 'last_active_at'>('updated_at')
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
@@ -34,7 +36,7 @@ export default function Dashboard() {
       let query = supabase
         .from('documents')
         .select('*', { count: 'exact' })
-        .order('updated_at', { ascending: false })
+        .order(sortOption, { ascending: false })
         .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1)
 
       if (searchQuery) {
@@ -56,7 +58,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDocuments()
-  }, [page, searchQuery]) // Re-fetch on page or search change
+  }, [page, searchQuery, sortOption])
 
   const handleCreateSession = async () => {
     const newId = uuidv4()
@@ -97,7 +99,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans text-zinc-900 dark:text-zinc-100 p-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-8">
 
         {/* Header */}
         <header className="flex items-center justify-between">
@@ -116,15 +118,25 @@ export default function Dashboard() {
         </header>
 
         {/* Search & Filters */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="Search sessions..."
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }} // Reset to page 1 on search
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-500/20"
-          />
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search sessions..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }} // Reset to page 1 on search
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-500/20"
+            />
+          </div>
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value as any)}
+            className="px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-500/20"
+          >
+            <option value="updated_at">Last Edited</option>
+            <option value="last_active_at">Last Opened</option>
+          </select>
         </div>
 
         {/* Session List */}
@@ -139,29 +151,32 @@ export default function Dashboard() {
               <p>No research sessions found.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex flex-col gap-2">
               {documents.map(doc => (
                 <Link
                   key={doc.id}
                   href={`/editor/${doc.id}`}
-                  className="group block p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm hover:shadow-md relative"
+                  className="group flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm hover:shadow-md relative"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="p-2 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                  <div className="flex items-center gap-4 overflow-hidden">
+                    <div className="p-2 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0">
                       <FileText className="w-5 h-5" />
                     </div>
-                    <button
-                      onClick={(e) => handleDelete(e, doc.id)}
-                      className="p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-zinc-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-base truncate pr-4 text-zinc-900 dark:text-zinc-100">{doc.title || 'Untitled'}</h3>
+                      <div className="flex items-center gap-3 text-xs text-zinc-500">
+                        <span>Edited {new Date(doc.updated_at).toLocaleDateString()}</span>
+                        
+                      </div>
+                    </div>
                   </div>
 
-                  <h3 className="font-semibold text-lg mb-1 truncate pr-4">{doc.title || 'Untitled'}</h3>
-                  <p className="text-zinc-500 text-xs">
-                    Updated {new Date(doc.updated_at).toLocaleDateString()}
-                  </p>
+                  <button
+                    onClick={(e) => handleDelete(e, doc.id)}
+                    className="p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-zinc-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </Link>
               ))}
             </div>
