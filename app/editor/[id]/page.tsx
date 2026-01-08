@@ -11,6 +11,7 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from "@/components/ui/resizable"
+import { VoiceAgent } from "@/components/voice-agent"
 
 export default function EditorPage() {
     const params = useParams()
@@ -18,6 +19,34 @@ export default function EditorPage() {
     const [title, setTitle] = useState("Autonomous Research")
     const [isEditing, setIsEditing] = useState(false)
     const supabase = createClient()
+
+    // We need access to the editor content for context. 
+    // Ideally UserEditor would lift this state up or we access it via context.
+    // Assuming useEditorContext is available and provides access.
+    // But wait, the context provider is inside UserEditor? No, usually wraps it.
+    // Let's assume for now we don't have direct access to the text unless we restructure.
+    // FOR PROTOTYPE: We will pass a placeholder or try to read from DOM/State if possible.
+    // Actually, let's just use a simple state reference if we can, or modify UserEditor to export it.
+    // Better: The `VoiceAgent` needs context. Let's rely on `useEditorContext` if it exists globally?
+    // Checking `hooks/use-context-engine.ts`....
+
+    // Let's mock the Handle for now.
+    const handleWriteToAiSpace = async (type: string, title: string, content: string) => {
+        // Find the active document and insert into ai_generations
+        try {
+            await supabase.from('ai_generations').insert({
+                document_id: documentId,
+                type: type.toLowerCase(),
+                content: content,
+                intent: title, // hijacking intent for title storage for now or we just put it in content
+                status: 'pending'
+            })
+            // Toast or notification here
+            console.log("Wrote to AI Space:", title);
+        } catch (e) {
+            console.error("Failed to write to AI Space", e);
+        }
+    }
 
     useEffect(() => {
         if (!documentId) return
@@ -124,6 +153,11 @@ export default function EditorPage() {
                 </ResizablePanel>
 
             </ResizablePanelGroup>
+            {/* Voice Agent Overlay */}
+            <VoiceAgent
+                initialContext={"Title: " + title} // We will improve this to pass actual editor content later
+                onContentGenerated={handleWriteToAiSpace}
+            />
         </div>
     );
 }
