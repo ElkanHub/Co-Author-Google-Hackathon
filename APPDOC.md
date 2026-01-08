@@ -1,7 +1,9 @@
 # Co-Author Application Documentation
 
 ## Overview
-Co-Author is an advanced AI-powered writing assistant designed to act as a "disciplined colleague." Unlike standard AI tools that spam suggestions, Co-Author uses a **7-Layer Maturity Stack** to observe, wait, and only intervene when it has a high-value contribution. It features a real-time collaborative editor (Tiptap), a dedicated AI research space, and a robust security layer.
+Co-Author is an advanced AI-powered writing assistant designed to act as a "disciplined colleague." Unlike standard AI tools that spam suggestions, Co-Author uses a **7-Layer Maturity Stack** to observe, wait, and only intervene when it has a high-value contribution. It features a real-time collaborative editor (Tiptap), a dedicated AI research space, and a robust security layer. 
+---
+The aim of **Co-Author** is to make an **Autonomous AI writing Partner** that can work with you, not against you.
 
 ## core Technology Stack
 - **Frontend**: Next.js 14 (App Router), React, Tailwind CSS, Lucide Icons.
@@ -20,10 +22,10 @@ The core intelligence of the application runs on a sophisticated decision funnel
 4.  **Layer 4: Contribution Cooldown (30s)** - Enforced silence. Defaults to a 30-second cooldown between unsolicited suggestions.
 5.  **Layer 5: Contribution Budgeting** - Limits proactive interruptions. Includes a **Feedback Protocol** (`Yes/No` cards) for high-stakes interventions.
 6.  **Layer 6: Interruption Justification** - The AI must justify *why* it is interrupting. The philosophy is **"VALUE IS INTELLIGENCE"**.
-7.  **Layer 7: Shadow Prompting** - Users can type `[prompt]` on a new line. The AI detects this instantly (1s debounce) and executes it.
+7.  **Layer 7: Shadow Prompting** - Users can type `[prompt]` on a new line. The AI detects this instantly (1s debounce) and executes it. This is a "Shadow Prompt".
 
 **Dynamic Island & Controls:**
-- **Pause/Resume**: A global toggle on the Dynamic Island instantly halts all AI observation (including Shadow Prompts).
+- **Pause/Resume**: A global toggle on the AI Dynamic Island instantly halts all AI observation (including Shadow Prompts).
 - **Welcome Greeting**: New sessions initialize with a system check to confirm readiness.
 
 ### 2. Security & Safety Layer (`lib/security.ts`)
