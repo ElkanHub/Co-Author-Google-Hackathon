@@ -23,7 +23,8 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
             if (name === 'write_to_ai_space' && onContentGenerated) {
                 onContentGenerated(args.type, args.title, args.content);
             }
-        }
+        },
+        muted: isMuted
     });
 
     // Handle Voice Activation/Deactivation via Store
@@ -65,7 +66,7 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
     }
 
     return (
-        <div className={cn("flex flex-col items-center gap-1 z-50 pointer-events-none", className)}>
+        <div className={cn("flex flex-col items-center gap-1 z-50 pointer-events-none", className)} >
             <motion.div
                 layout
                 initial={{ opacity: 0, y: -20 }}
@@ -227,6 +228,6 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
                     </AnimatePresence>
                 </motion.div>
             </motion.div>
-        </div>
+        </div >
     )
 }

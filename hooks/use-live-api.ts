@@ -9,9 +9,10 @@ const API_URL =
 
 interface UseLiveApiOptions {
     onToolCall?: (tool: string, args: any) => Promise<any>;
+    muted?: boolean;
 }
 
-export function useLiveApi({ onToolCall }: UseLiveApiOptions = {}) {
+export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}) {
     /* ----------------------------- UI State ----------------------------- */
     const [isConnected, setIsConnected] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -32,8 +33,15 @@ export function useLiveApi({ onToolCall }: UseLiveApiOptions = {}) {
     const isPlayingRef = useRef(false);
 
     // Audio scheduling
+    // Audio scheduling
     const nextPlayTimeRef = useRef(0);
     const scheduledSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+
+    // Mute state ref for audio callback access
+    const mutedRef = useRef(muted);
+    useEffect(() => {
+        mutedRef.current = muted;
+    }, [muted]);
 
     /* ---------------------- Loop Logic ----------------------------- */
 
@@ -228,7 +236,7 @@ export function useLiveApi({ onToolCall }: UseLiveApiOptions = {}) {
 
         // 4. Send Mic Audio
         recorder.port.onmessage = (e) => {
-            if (socket.readyState !== WebSocket.OPEN) return;
+            if (socket.readyState !== WebSocket.OPEN || mutedRef.current) return;
             const int16 = float32ToInt16(e.data);
             socket.send(JSON.stringify({
                 realtimeInput: {
