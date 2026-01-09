@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { AIDynamicIsland } from "@/components/ai-dynamic-island";
 import { UserEditor } from "@/components/editor/user-editor";
 import { AISidebar } from "@/components/ai-sidebar";
+import { useAIStore } from "@/store/use-ai-store"; // Import store
 import {
     ResizableHandle,
     ResizablePanel,
@@ -32,16 +33,22 @@ export default function EditorPage() {
 
     // Let's mock the Handle for now.
     const handleWriteToAiSpace = async (type: string, title: string, content: string) => {
-        // Find the active document and insert into ai_generations
+        // Validate type
+        const validTypes = ['suggestion', 'analysis', 'citation', 'feedback', 'action'];
+        const cardType = validTypes.includes(type.toLowerCase()) ? type.toLowerCase() : 'analysis';
+
+        const newCard = {
+            id: crypto.randomUUID(),
+            type: cardType as any,
+            content: content,
+            reason: title, // hijacking intent for title storage for now
+            timestamp: new Date(),
+            fromDb: false
+        };
+
         try {
-            await supabase.from('ai_generations').insert({
-                document_id: documentId,
-                type: type.toLowerCase(),
-                content: content,
-                intent: title, // hijacking intent for title storage for now or we just put it in content
-                status: 'pending'
-            })
-            // Toast or notification here
+            // Use store action for optimistic update + DB save
+            await useAIStore.getState().saveCard(newCard, documentId);
             console.log("Wrote to AI Space:", title);
         } catch (e) {
             console.error("Failed to write to AI Space", e);

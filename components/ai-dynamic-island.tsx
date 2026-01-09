@@ -146,7 +146,8 @@ PROTOCOL:
 
 3. Rules for User Voice:
    - Always answer my questions.
-   - Be concise, professional, and helpful.`,
+   - Be concise, professional, and helpful.
+   - If you have a specific suggestion, citation, or deep insight, use the "write_to_ai_space" tool to save it as a card for me.`,
                 tools: tools
             });
 
