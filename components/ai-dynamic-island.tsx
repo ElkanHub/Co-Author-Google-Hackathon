@@ -19,7 +19,7 @@ interface AIDynamicIslandProps {
 export function AIDynamicIsland({ className, initialContext = "", onContentGenerated }: AIDynamicIslandProps) {
     const { writerState, voiceState, isMuted, toggleMute, setVoiceState, isPaused, togglePause } = useAIStore()
 
-    const { connect, disconnect, isConnected, isSpeaking } = useLiveApi({
+    const { connect, disconnect, isConnected, isSpeaking, sendText } = useLiveApi({
         onToolCall: async (name, args) => {
             if (name === 'write_to_ai_space' && onContentGenerated) {
                 onContentGenerated(args.type, args.title, args.content);
@@ -39,6 +39,56 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
         },
         muted: isMuted
     });
+
+    // Refs for Debouncing
+    const editorTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const aiTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const lastEditorContentRef = React.useRef("");
+    const lastAIContentRef = React.useRef("");
+
+    // Active Listener: Editor Content
+    React.useEffect(() => {
+        if (!isConnected || isPaused) return;
+
+        const unsubscribe = useEditorStore.subscribe((state) => {
+            const content = state.content;
+            if (content === lastEditorContentRef.current) return;
+
+            if (editorTimeoutRef.current) clearTimeout(editorTimeoutRef.current);
+            editorTimeoutRef.current = setTimeout(() => {
+                lastEditorContentRef.current = content;
+                sendText(`[EDITOR_UPDATE]\n${content}`);
+            }, 800); // 800ms debounce
+        });
+        return () => {
+            unsubscribe();
+            if (editorTimeoutRef.current) clearTimeout(editorTimeoutRef.current);
+        };
+    }, [isConnected, isPaused, sendText]);
+
+    // Active Listener: AI Space
+    React.useEffect(() => {
+        if (!isConnected || isPaused) return;
+
+        const unsubscribe = useAIStore.subscribe((state) => {
+            // Simple serialization for diffing
+            const summary = JSON.stringify(state.cards.map(c => ({ t: c.type, c: c.content })));
+            if (summary === lastAIContentRef.current) return;
+
+            if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+            aiTimeoutRef.current = setTimeout(() => {
+                lastAIContentRef.current = summary;
+                // We send a simplified update
+                const readableSummary = state.cards.map(c => `[${c.type.toUpperCase()}] ${c.content}`).join('\n');
+                sendText(`[AI_SPACE_UPDATE]\n${readableSummary}`);
+            }, 1500); // 1.5s debounce for AI space
+        });
+
+        return () => {
+            unsubscribe();
+            if (aiTimeoutRef.current) clearTimeout(aiTimeoutRef.current);
+        };
+    }, [isConnected, isPaused, sendText]);
 
     // Handle Voice Activation/Deactivation via Store
     // When store says 'active', we try to connect if not connected
@@ -82,6 +132,16 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
             connect({
                 apiKey: API_KEY,
                 context: `${initialContext}\n\nCurrent Editor Content: "${currentEditorContent.slice(0, 1000)}..." (Use tool read_editor for full content)`,
+                systemInstruction: `You are a dedicated, active co-author.
+                
+PROTOCOL:
+1. I will stream you real-time updates of the document labeled [EDITOR_UPDATE] and the sidebar labeled [AI_SPACE_UPDATE].
+2. Treat these updates as "Silent Context". Do NOT respond to them unless:
+    - You see a clear request for help in the text (e.g., "[Help me here]").
+    - You spot a critical issue or have a brilliant suggestion that warrants interruption.
+    - The user explicitly asks you something verbally.
+3. Otherwise, just acknowledge internally and keep your understanding fresh.
+4. When you speak, be concise, professional, and helpful.`,
                 tools: tools
             });
 

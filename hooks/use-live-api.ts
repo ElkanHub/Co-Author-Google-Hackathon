@@ -291,7 +291,24 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
     }, [isConnected, processMessages, playbackLoop]);
 
 
-    return { connect, disconnect, isConnected, isSpeaking };
+
+    /* ------------------------- Helper Functions -------------------------- */
+
+    const sendText = useCallback((text: string) => {
+        if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
+
+        socketRef.current.send(JSON.stringify({
+            clientContent: {
+                turns: [{
+                    role: 'user',
+                    parts: [{ text }]
+                }],
+                turnComplete: true // We mark it complete so the model 'hears' it, instructions will suppress response
+            }
+        }));
+    }, []);
+
+    return { connect, disconnect, isConnected, isSpeaking, sendText };
 }
 
 /* ============================= Utils ================================= */
