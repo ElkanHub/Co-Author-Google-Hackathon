@@ -294,7 +294,7 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
 
     /* ------------------------- Helper Functions -------------------------- */
 
-    const sendText = useCallback((text: string) => {
+    const sendText = useCallback((text: string, endTurn = true) => {
         if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
 
         socketRef.current.send(JSON.stringify({
@@ -303,7 +303,7 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
                     role: 'user',
                     parts: [{ text }]
                 }],
-                turnComplete: true // We mark it complete so the model 'hears' it, instructions will suppress response
+                turnComplete: endTurn
             }
         }));
     }, []);

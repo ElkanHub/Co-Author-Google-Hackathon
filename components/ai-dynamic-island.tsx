@@ -57,7 +57,7 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
             if (editorTimeoutRef.current) clearTimeout(editorTimeoutRef.current);
             editorTimeoutRef.current = setTimeout(() => {
                 lastEditorContentRef.current = content;
-                sendText(`[EDITOR_UPDATE]\n${content}`);
+                sendText(`[EDITOR_UPDATE]\n${content}`, false);
             }, 800); // 800ms debounce
         });
         return () => {
@@ -80,7 +80,7 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
                 lastAIContentRef.current = summary;
                 // We send a simplified update
                 const readableSummary = state.cards.map(c => `[${c.type.toUpperCase()}] ${c.content}`).join('\n');
-                sendText(`[AI_SPACE_UPDATE]\n${readableSummary}`);
+                sendText(`[AI_SPACE_UPDATE]\n${readableSummary}`, false);
             }, 1500); // 1.5s debounce for AI space
         });
 
