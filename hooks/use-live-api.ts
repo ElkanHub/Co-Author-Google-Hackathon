@@ -1,250 +1,267 @@
+// use-live-api.ts
 'use client';
 
-import { useRef, useState, useEffect, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { useRef, useState, useCallback } from 'react';
 
 const MODEL = 'models/gemini-2.0-flash-exp';
-const API_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
+const API_URL =
+    'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
 
-interface UseLiveApiProps {
-    onToolCall?: (toolName: string, args: any) => Promise<any>;
-}
-
-export function useLiveApi({ onToolCall }: UseLiveApiProps = {}) {
+/**
+ * This hook manages:
+ * - microphone capture
+ * - streaming audio to Gemini Live
+ * - receiving streamed PCM audio
+ * - smooth, jitter-free playback
+ */
+export function useLiveApi({ onToolCall }: { onToolCall?: (tool: string, args: any) => Promise<any> } = {}) {
+    /* ----------------------------- UI State ----------------------------- */
     const [isConnected, setIsConnected] = useState(false);
-    const [isSpeaking, setIsSpeaking] = useState(false); // Validating if AI is speaking
-    const [volume, setVolume] = useState(0); // For viz
+    const [isSpeaking, setIsSpeaking] = useState(false);
 
+    /* --------------------------- Core Refs ------------------------------- */
     const socketRef = useRef<WebSocket | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
+    const micStreamRef = useRef<MediaStream | null>(null);
 
-    // Queue for playing audio response
-    const audioQueueRef = useRef<Float32Array[]>([]);
-    const isPlayingRef = useRef(false);
+    // Input audio context (mic → Gemini)
+    const inputCtxRef = useRef<AudioContext | null>(null);
+    const workletRef = useRef<AudioWorkletNode | null>(null);
+
+    // Output audio context (Gemini → speakers)
+    const outputCtxRef = useRef<AudioContext | null>(null);
+
+    /* --------------------- Playback Buffering ---------------------------- */
+
+    /**
+     * Raw PCM chunks arrive in unpredictable sizes.
+     * We aggregate them into stable frames before playback.
+     */
+    const pcmAccumulatorRef = useRef<Float32Array[]>([]);
+    const accumulatedSamplesRef = useRef(0);
+
+    /**
+     * Final playback queue (jitter buffer)
+     * Always keep a few frames ahead of playback.
+     */
+    const playbackQueueRef = useRef<Float32Array[]>([]);
+    const isDrainingRef = useRef(false);
+
+    /**
+     * Audio clock scheduling
+     */
     const nextPlayTimeRef = useRef(0);
 
+    /* ------------------------ Constants ---------------------------------- */
+
+    const TARGET_FRAME_SIZE = 2048; // ~85ms @ 24kHz (stable speech)
+    const MIN_QUEUE_FRAMES = 3;     // ~250ms jitter buffer
+
+    /* ---------------------- Connection Logic ----------------------------- */
+
     const connect = useCallback(async (apiKey: string, context: string) => {
-        if (!apiKey) {
-            console.error("No API Key provided");
+        if (!apiKey) throw new Error('Missing API key');
+
+        /* ---------------------- Microphone Setup --------------------------- */
+
+        const micStream = await navigator.mediaDevices.getUserMedia({
+            audio: { sampleRate: 16000, channelCount: 1 }
+        });
+        micStreamRef.current = micStream;
+
+        const inputCtx = new AudioContext({ sampleRate: 16000 });
+        inputCtxRef.current = inputCtx;
+
+        await inputCtx.audioWorklet.addModule('/audio-processor.js');
+
+        const micSource = inputCtx.createMediaStreamSource(micStream);
+        const recorder = new AudioWorkletNode(inputCtx, 'audio-recorder');
+        micSource.connect(recorder);
+        workletRef.current = recorder;
+
+        /* ---------------------- Output Audio Setup -------------------------- */
+
+        const outputCtx = new AudioContext({ sampleRate: 24000 });
+        outputCtxRef.current = outputCtx;
+
+        /* ------------------------ WebSocket -------------------------------- */
+
+        const socket = new WebSocket(`${API_URL}?key=${apiKey}`);
+        socketRef.current = socket;
+
+        socket.onopen = () => {
+            setIsConnected(true);
+
+            socket.send(JSON.stringify({
+                setup: {
+                    model: MODEL,
+                    systemInstruction: {
+                        parts: [{ text: `You are a disciplined research co-author.\n\n${context}` }]
+                    },
+                    generationConfig: {
+                        responseModalities: ['AUDIO'],
+                        speechConfig: {
+                            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } }
+                        }
+                    }
+                }
+            }));
+        };
+
+        /* ------------------ Receive Gemini Audio ---------------------------- */
+
+        socket.onmessage = async (event) => {
+            const text = event.data instanceof Blob ? await event.data.text() : event.data;
+            const msg = JSON.parse(text);
+
+            // Handle streamed audio
+            const parts = msg?.serverContent?.modelTurn?.parts ?? [];
+            for (const part of parts) {
+                if (part.inlineData?.mimeType?.startsWith('audio/pcm')) {
+                    const pcm = base64ToFloat32(part.inlineData.data);
+                    handleIncomingPCM(pcm);
+                }
+            }
+
+            // Handle tool calls
+            if (msg.toolCall && onToolCall) {
+                const responses = [];
+
+                for (const fc of msg.toolCall.functionCalls) {
+                    try {
+                        await onToolCall(fc.name, fc.args);
+                        responses.push({ id: fc.id, name: fc.name, response: { result: 'ok' } });
+                    } catch (e: any) {
+                        responses.push({
+                            id: fc.id,
+                            name: fc.name,
+                            response: { error: e.message }
+                        });
+                    }
+                }
+
+                socket.send(JSON.stringify({ toolResponse: { functionResponses: responses } }));
+            }
+        };
+
+        socket.onclose = () => setIsConnected(false);
+        socket.onerror = console.error;
+
+        /* ------------------ Send Mic Audio (Throttled) ---------------------- */
+
+        recorder.port.onmessage = (e) => {
+            if (socket.readyState !== WebSocket.OPEN) return;
+
+            const int16 = float32ToInt16(e.data);
+            socket.send(JSON.stringify({
+                realtimeInput: {
+                    mediaChunks: [{
+                        mimeType: 'audio/pcm;rate=16000',
+                        data: arrayBufferToBase64(int16.buffer)
+                    }]
+                }
+            }));
+        };
+
+    }, [onToolCall]);
+
+    /* ---------------------- Incoming Audio Handling ---------------------- */
+
+    function handleIncomingPCM(pcm: Float32Array) {
+        pcmAccumulatorRef.current.push(pcm);
+        accumulatedSamplesRef.current += pcm.length;
+
+        if (accumulatedSamplesRef.current >= TARGET_FRAME_SIZE) {
+            const frame = mergeFloat32(pcmAccumulatorRef.current);
+            pcmAccumulatorRef.current = [];
+            accumulatedSamplesRef.current = 0;
+            enqueueFrame(frame);
+        }
+    }
+
+    function enqueueFrame(frame: Float32Array) {
+        playbackQueueRef.current.push(frame);
+
+        // Start playback only once we have enough buffered
+        if (!isDrainingRef.current && playbackQueueRef.current.length >= MIN_QUEUE_FRAMES) {
+            setIsSpeaking(true);
+            drainPlaybackQueue();
+        }
+    }
+
+    function drainPlaybackQueue() {
+        if (!outputCtxRef.current) return;
+        if (playbackQueueRef.current.length === 0) {
+            isDrainingRef.current = false;
+            setIsSpeaking(false);
             return;
         }
 
-        try {
-            // 1. Setup Audio Input
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } });
-            streamRef.current = stream;
+        isDrainingRef.current = true;
+        const frame = playbackQueueRef.current.shift()!;
+        scheduleFrame(frame, outputCtxRef.current);
 
-            // Input Context (16kHz)
-            const inputContext = new AudioContext({ sampleRate: 16000 });
-            await inputContext.audioWorklet.addModule('/audio-processor.js');
-            const source = inputContext.createMediaStreamSource(stream);
-            const processor = new AudioWorkletNode(inputContext, 'audio-recorder');
-            source.connect(processor);
-            audioWorkletNodeRef.current = processor;
+        setTimeout(drainPlaybackQueue, 20);
+    }
 
-            // Output Context (24kHz for Gemini)
-            const outputContext = new AudioContext({ sampleRate: 24000 });
-            audioContextRef.current = outputContext;
-
-            // 2. Setup WebSocket
-            // WSS URL with key param
-            const wsUrl = `${API_URL}?key=${apiKey}`;
-            const socket = new WebSocket(wsUrl);
-            socketRef.current = socket;
-
-            socket.onopen = () => {
-                setIsConnected(true);
-                console.log('Gemini Live Connected');
-
-                const inputRate = inputContext.sampleRate;
-                console.log("Audio Input Sample Rate:", inputRate);
-
-                // Initial Setup Message
-                const setupMsg = {
-                    setup: {
-                        model: MODEL,
-                        systemInstruction: {
-                            parts: [{ text: `You are a helpful research co-author. The user is writing a document. Here implies context:\n${context}` }]
-                        },
-                        tools: [
-                            {
-                                googleSearch: {}
-                            },
-                            {
-                                functionDeclarations: [{
-                                    name: "write_to_ai_space",
-                                    description: "Writes a generated research note, summary, or finding to the AI Space (a side panel for content).",
-                                    parameters: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            title: { type: "STRING", description: "Title of the note" },
-                                            content: { type: "STRING", description: "The markdown content to write." },
-                                            type: { type: "STRING", enum: ["suggestion", "analysis", "citation"], description: "Type of content" }
-                                        },
-                                        required: ["title", "content", "type"]
-                                    }
-                                }]
-                            }
-                        ],
-                        generationConfig: {
-                            responseModalities: ["AUDIO"],
-                            speechConfig: {
-                                voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } }
-                            }
-                        }
-                    }
-                };
-                console.log("Sending Setup Config:", setupMsg);
-                socket.send(JSON.stringify(setupMsg));
-            };
-
-            socket.onmessage = async (event) => {
-                let text = event.data;
-                if (event.data instanceof Blob) {
-                    text = await event.data.text();
-                }
-                const msg = JSON.parse(text);
-
-                // Handle Audio
-                if (msg.serverContent?.modelTurn?.parts) {
-                    // console.log("Received Audio Part");
-                    for (const part of msg.serverContent.modelTurn.parts) {
-                        if (part.inlineData && part.inlineData.mimeType.startsWith('audio/pcm')) { // Normalize PCM
-                            const base64 = part.inlineData.data;
-                            const pcmData = base64ToFloat32(base64);
-                            if (audioContextRef.current) {
-                                scheduleAudio(pcmData, audioContextRef.current);
-                            }
-                        }
-                    }
-                }
-
-                // Handle Tool Calls
-                if (msg.toolCall) {
-                    console.log("Tool Call Received:", msg.toolCall);
-                    // Cancel audio playback on tool call (usually means it's thinking effectively or switching modes?) 
-                    // Actually, keep playing audio if it sent some intro.
-
-                    const functionResponses = [];
-
-                    for (const fc of msg.toolCall.functionCalls) {
-                        let result = { result: "ok" };
-
-                        if (fc.name === "write_to_ai_space" && onToolCall) {
-                            try {
-                                await onToolCall("write_to_ai_space", fc.args);
-                                result = { result: "Successfully wrote to AI space." };
-                            } catch (e: any) {
-                                result = { result: `Error: ${e.message}` };
-                            }
-                        }
-
-                        functionResponses.push({
-                            id: fc.id,
-                            name: fc.name,
-                            response: result
-                        });
-                    }
-
-                    // Send Tool Response
-                    const responseMsg = {
-                        toolResponse: {
-                            functionResponses: functionResponses
-                        }
-                    };
-                    socket.send(JSON.stringify(responseMsg));
-                }
-            };
-
-            socket.onerror = (err) => {
-                console.error('Socket Error:', err);
-            };
-
-            socket.onclose = (event) => {
-                console.log('Socket Closed', event.code, event.reason);
-                setIsConnected(false);
-            };
-
-            // 3. Data Flow: Worklet -> Socket
-            processor.port.onmessage = (e) => {
-                const float32Data = e.data as Float32Array;
-                // Simple Downsampling if rate > 16000? 
-                // For prototype, we blindly send.
-
-                // Convert Float32 to Int16 PCM Base64
-                const int16Data = float32ToInt16(float32Data);
-                const base64Data = arrayBufferToBase64(int16Data.buffer);
-
-                if (socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({
-                        realtimeInput: {
-                            mediaChunks: [{
-                                mimeType: "audio/pcm;rate=16000",
-                                data: base64Data
-                            }]
-                        }
-                    }));
-                }
-            };
-
-        } catch (e) {
-            console.error("Connection failed", e);
-        }
-    }, [onToolCall]);
-
-    const disconnect = useCallback(() => {
-        if (socketRef.current) {
-            socketRef.current.close();
-            socketRef.current = null;
-        }
-        if (audioContextRef.current) {
-            audioContextRef.current.close();
-            audioContextRef.current = null;
-        }
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
-        setIsConnected(false);
-        setIsSpeaking(false);
-    }, []);
-
-    // Helper: Play Audio Queue
-    const scheduleAudio = (pcmData: Float32Array, ctx: AudioContext) => {
-        // Very simple scheduler
-        const buffer = ctx.createBuffer(1, pcmData.length, 24000);
-        buffer.copyToChannel(pcmData as any, 0);
+    function scheduleFrame(frame: Float32Array, ctx: AudioContext) {
+        const buffer = ctx.createBuffer(1, frame.length, 24000);
+        buffer.copyToChannel(frame as Float32Array<ArrayBuffer>, 0);
 
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.connect(ctx.destination);
 
-        // Calculate start time
-        const currentTime = ctx.currentTime;
-        const startTime = Math.max(currentTime, nextPlayTimeRef.current);
+        const now = ctx.currentTime;
+        if (nextPlayTimeRef.current < now) {
+            nextPlayTimeRef.current = now + 0.05; // jitter safety
+        }
 
-        source.start(startTime);
-        nextPlayTimeRef.current = startTime + buffer.duration;
+        source.start(nextPlayTimeRef.current);
+        nextPlayTimeRef.current += buffer.duration;
+    }
 
-        setIsSpeaking(true);
-        source.onended = () => {
-            if (ctx.currentTime >= nextPlayTimeRef.current - 0.1) {
-                setIsSpeaking(false); // Rough approx
-            }
-        };
-    };
+    /* ------------------------- Disconnect -------------------------------- */
+
+    const disconnect = useCallback(() => {
+        socketRef.current?.close();
+        micStreamRef.current?.getTracks().forEach(t => t.stop());
+        inputCtxRef.current?.close();
+        outputCtxRef.current?.close();
+
+        socketRef.current = null;
+        micStreamRef.current = null;
+        inputCtxRef.current = null;
+        outputCtxRef.current = null;
+
+        playbackQueueRef.current = [];
+        pcmAccumulatorRef.current = [];
+        accumulatedSamplesRef.current = 0;
+        nextPlayTimeRef.current = 0;
+
+        setIsConnected(false);
+        setIsSpeaking(false);
+    }, []);
 
     return { connect, disconnect, isConnected, isSpeaking };
 }
 
-// Utils
+/* ============================= Utils ================================= */
+
+function mergeFloat32(chunks: Float32Array[]) {
+    const length = chunks.reduce((s, c) => s + c.length, 0);
+    const result = new Float32Array(length);
+    let offset = 0;
+    for (const c of chunks) {
+        result.set(c, offset);
+        offset += c.length;
+    }
+    return result;
+}
+
 function float32ToInt16(float32: Float32Array) {
     const int16 = new Int16Array(float32.length);
     for (let i = 0; i < float32.length; i++) {
-        let s = Math.max(-1, Math.min(1, float32[i]));
-        int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        int16[i] = Math.max(-1, Math.min(1, float32[i])) * 0x7fff;
     }
     return int16;
 }
@@ -253,23 +270,11 @@ function base64ToFloat32(base64: string) {
     const binary = atob(base64);
     const buffer = new ArrayBuffer(binary.length);
     const view = new Uint8Array(buffer);
-    for (let i = 0; i < binary.length; i++) {
-        view[i] = binary.charCodeAt(i);
-    }
+    for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
     const int16 = new Int16Array(buffer);
-    const float32 = new Float32Array(int16.length);
-    for (let i = 0; i < int16.length; i++) {
-        float32[i] = int16[i] / 32768.0;
-    }
-    return float32;
+    return Float32Array.from(int16, x => x / 32768);
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer) {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
 }
