@@ -12,6 +12,13 @@ interface UseLiveApiOptions {
     muted?: boolean;
 }
 
+interface ConnectOptions {
+    apiKey: string;
+    context?: string;
+    tools?: any[];
+    systemInstruction?: string;
+}
+
 export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}) {
     /* ----------------------------- UI State ----------------------------- */
     const [isConnected, setIsConnected] = useState(false);
@@ -174,7 +181,7 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
 
     /* ---------------------- Connection Logic ----------------------------- */
 
-    const connect = useCallback(async (apiKey: string, context: string) => {
+    const connect = useCallback(async ({ apiKey, context, tools, systemInstruction }: ConnectOptions) => {
         if (!apiKey) throw new Error('Missing API key');
 
         // 1. Setup Microphone
@@ -209,8 +216,9 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
                 setup: {
                     model: MODEL,
                     systemInstruction: {
-                        parts: [{ text: `You are a disciplined research co-author.\n\n${context}` }]
+                        parts: [{ text: systemInstruction || `You are a disciplined research co-author.\n\n${context || ''}` }]
                     },
+                    tools: tools ? tools : undefined,
                     generationConfig: {
                         responseModalities: ['AUDIO'],
                         speechConfig: {

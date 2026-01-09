@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, MicOff, X, Sparkles, Loader2 } from 'lucide-react'
 import { useLiveApi } from '@/hooks/use-live-api'
 import { useAIStore } from '@/store/use-ai-store'
+import { useEditorStore } from '@/store/use-editor-store'
 import { cn } from '@/lib/utils'
 
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
@@ -23,6 +24,18 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
             if (name === 'write_to_ai_space' && onContentGenerated) {
                 onContentGenerated(args.type, args.title, args.content);
             }
+            if (name === 'read_editor') {
+                return { content: useEditorStore.getState().content };
+            }
+            if (name === 'read_ai_space') {
+                const cards = useAIStore.getState().cards.map(c => ({
+                    type: c.type,
+                    content: c.content,
+                    reason: c.reason,
+                    timestamp: c.timestamp
+                }));
+                return { cards };
+            }
         },
         muted: isMuted
     });
@@ -37,7 +50,41 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
                 setVoiceState('inactive');
                 return;
             }
-            connect(API_KEY, initialContext);
+
+            const tools = [{
+                functionDeclarations: [
+                    {
+                        name: "read_editor",
+                        description: "Read the current raw text content of the document the user is writing."
+                    },
+                    {
+                        name: "read_ai_space",
+                        description: "Read the current cards, suggestions, and insights in the AI sidebar."
+                    },
+                    {
+                        name: "write_to_ai_space",
+                        description: "Write content to the AI sidebar/space.",
+                        parameters: {
+                            type: "object",
+                            properties: {
+                                type: { type: "string", enum: ["suggestion", "analysis", "citation"] },
+                                title: { type: "string" },
+                                content: { type: "string" }
+                            },
+                            required: ["type", "title", "content"]
+                        }
+                    }
+                ]
+            }];
+
+            const currentEditorContent = useEditorStore.getState().content;
+
+            connect({
+                apiKey: API_KEY,
+                context: `${initialContext}\n\nCurrent Editor Content: "${currentEditorContent.slice(0, 1000)}..." (Use tool read_editor for full content)`,
+                tools: tools
+            });
+
         } else if (voiceState === 'inactive' && isConnected) {
             disconnect();
         }
