@@ -1,7 +1,7 @@
 class AudioRecorder extends AudioWorkletProcessor {
     constructor() {
         super();
-        this.buffer = new Float32Array(2048); // Internal buffer
+        this.buffer = new Float32Array(8192); // Internal buffer
         this.bufferIdx = 0;
     }
 
@@ -9,12 +9,23 @@ class AudioRecorder extends AudioWorkletProcessor {
         const input = inputs[0];
         if (!input || !input.length) return true;
 
-        const channelData = input[0]; // Mono
+        const channelData = input[0];
 
-        // We just forward the raw float data to the main thread
-        // The main thread will handle conversion to Int16 and base64 encoding
-        // This keeps the worklet simple and non-blocking
-        this.port.postMessage(channelData);
+        // Append to buffer
+        if (this.bufferIdx + channelData.length > this.buffer.length) {
+            // Buffer overflow/wrap (shouldn't happen often if we size right, but let's just flush what we have)
+            this.port.postMessage(this.buffer.slice(0, this.bufferIdx));
+            this.bufferIdx = 0;
+        }
+
+        this.buffer.set(channelData, this.bufferIdx);
+        this.bufferIdx += channelData.length;
+
+        // Flush if full enough (e.g. >= 2048)
+        if (this.bufferIdx >= 4096) {
+            this.port.postMessage(this.buffer.slice(0, this.bufferIdx));
+            this.bufferIdx = 0;
+        }
 
         return true;
     }
