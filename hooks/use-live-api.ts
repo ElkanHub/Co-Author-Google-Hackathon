@@ -1,20 +1,17 @@
 // use-live-api.ts
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 
 const MODEL = 'models/gemini-2.0-flash-exp';
 const API_URL =
     'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
 
-/**
- * This hook manages:
- * - microphone capture
- * - streaming audio to Gemini Live
- * - receiving streamed PCM audio
- * - smooth, jitter-free playback
- */
-export function useLiveApi({ onToolCall }: { onToolCall?: (tool: string, args: any) => Promise<any> } = {}) {
+interface UseLiveApiOptions {
+    onToolCall?: (tool: string, args: any) => Promise<any>;
+}
+
+export function useLiveApi({ onToolCall }: UseLiveApiOptions = {}) {
     /* ----------------------------- UI State ----------------------------- */
     const [isConnected, setIsConnected] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -22,47 +19,157 @@ export function useLiveApi({ onToolCall }: { onToolCall?: (tool: string, args: a
     /* --------------------------- Core Refs ------------------------------- */
     const socketRef = useRef<WebSocket | null>(null);
     const micStreamRef = useRef<MediaStream | null>(null);
-
-    // Input audio context (mic → Gemini)
     const inputCtxRef = useRef<AudioContext | null>(null);
     const workletRef = useRef<AudioWorkletNode | null>(null);
-
-    // Output audio context (Gemini → speakers)
     const outputCtxRef = useRef<AudioContext | null>(null);
 
-    /* --------------------- Playback Buffering ---------------------------- */
+    // Queues for decoupled processing
+    const responseQueueRef = useRef<any[]>([]);
+    const audioQueueRef = useRef<Float32Array[]>([]);
 
-    /**
-     * Raw PCM chunks arrive in unpredictable sizes.
-     * We aggregate them into stable frames before playback.
-     */
-    const pcmAccumulatorRef = useRef<Float32Array[]>([]);
-    const accumulatedSamplesRef = useRef(0);
+    // Control flags for loops
+    const isProcessingRef = useRef(false);
+    const isPlayingRef = useRef(false);
 
-    /**
-     * Final playback queue (jitter buffer)
-     * Always keep a few frames ahead of playback.
-     */
-    const playbackQueueRef = useRef<Float32Array[]>([]);
-    const isDrainingRef = useRef(false);
-
-    /**
-     * Audio clock scheduling
-     */
+    // Audio scheduling
     const nextPlayTimeRef = useRef(0);
+    const scheduledSourcesRef = useRef<AudioBufferSourceNode[]>([]);
 
-    /* ------------------------ Constants ---------------------------------- */
+    /* ---------------------- Loop Logic ----------------------------- */
 
-    const TARGET_FRAME_SIZE = 2048; // ~85ms @ 24kHz (stable speech)
-    const MIN_QUEUE_FRAMES = 3;     // ~250ms jitter buffer
+    // Process incoming server messages
+    const processMessages = useCallback(async () => {
+        if (isProcessingRef.current) return;
+        isProcessingRef.current = true;
+
+        try {
+            while (isConnected && socketRef.current?.readyState === WebSocket.OPEN) {
+                const msg = responseQueueRef.current.shift();
+
+                if (!msg) {
+                    await new Promise(r => setTimeout(r, 20));
+                    continue;
+                }
+
+                // Handle interruption
+                if (msg.serverContent?.interrupted) {
+                    // Clear queues and stop playback immediately
+                    audioQueueRef.current = [];
+                    responseQueueRef.current = []; // also clear pending responses
+                    stopAllScheduledAudio();
+                    setIsSpeaking(false);
+                    continue;
+                }
+
+                // Handle Audio
+                const parts = msg?.serverContent?.modelTurn?.parts ?? [];
+                for (const part of parts) {
+                    if (part.inlineData?.mimeType?.startsWith('audio/pcm')) {
+                        const pcm = base64ToFloat32(part.inlineData.data);
+                        audioQueueRef.current.push(pcm);
+                    }
+                }
+
+                // Handle Tool Calls
+                if (msg.toolCall && onToolCall) {
+                    const responses = [];
+                    for (const fc of msg.toolCall.functionCalls) {
+                        try {
+                            await onToolCall(fc.name, fc.args);
+                            responses.push({ id: fc.id, name: fc.name, response: { result: 'ok' } });
+                        } catch (e: any) {
+                            responses.push({
+                                id: fc.id,
+                                name: fc.name,
+                                response: { error: e.message }
+                            });
+                        }
+                    }
+                    socketRef.current?.send(JSON.stringify({ toolResponse: { functionResponses: responses } }));
+                }
+
+                // Yield to event loop occasionally
+                if (responseQueueRef.current.length === 0) {
+                    await new Promise(r => setTimeout(r, 0));
+                }
+            }
+        } finally {
+            isProcessingRef.current = false;
+        }
+    }, [onToolCall, isConnected]);
+
+
+    // Playback loop
+    const playbackLoop = useCallback(async () => {
+        if (isPlayingRef.current) return;
+        isPlayingRef.current = true;
+
+        try {
+            while (isConnected) {
+                if (!outputCtxRef.current) {
+                    await new Promise(r => setTimeout(r, 50));
+                    continue;
+                }
+
+                if (audioQueueRef.current.length > 0) {
+                    setIsSpeaking(true);
+                    const pcm = audioQueueRef.current.shift()!;
+                    scheduleFrame(pcm, outputCtxRef.current);
+                } else {
+                    // Check if we are actually still playing audio
+                    if (outputCtxRef.current.currentTime >= nextPlayTimeRef.current) {
+                        setIsSpeaking(false);
+                    }
+                    await new Promise(r => setTimeout(r, 20));
+                }
+            }
+        } finally {
+            isPlayingRef.current = false;
+        }
+    }, [isConnected]);
+
+    // Schedule a single frame
+    const scheduleFrame = (pcm: Float32Array, ctx: AudioContext) => {
+        const buffer = ctx.createBuffer(1, pcm.length, 24000);
+        buffer.copyToChannel(pcm as Float32Array<ArrayBuffer>, 0);
+
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        // Schedule next chunk slightly ahead to prevent gaps, but not too far
+        const startTime = Math.max(now, nextPlayTimeRef.current);
+
+        source.start(startTime);
+        scheduledSourcesRef.current.push(source);
+
+        // Clean up finished sources
+        source.onended = () => {
+            const idx = scheduledSourcesRef.current.indexOf(source);
+            if (idx > -1) scheduledSourcesRef.current.splice(idx, 1);
+        };
+
+        nextPlayTimeRef.current = startTime + buffer.duration;
+    };
+
+    const stopAllScheduledAudio = () => {
+        scheduledSourcesRef.current.forEach(s => {
+            try { s.stop(); } catch (e) { }
+        });
+        scheduledSourcesRef.current = [];
+        if (outputCtxRef.current) {
+            nextPlayTimeRef.current = outputCtxRef.current.currentTime;
+        }
+    };
+
 
     /* ---------------------- Connection Logic ----------------------------- */
 
     const connect = useCallback(async (apiKey: string, context: string) => {
         if (!apiKey) throw new Error('Missing API key');
 
-        /* ---------------------- Microphone Setup --------------------------- */
-
+        // 1. Setup Microphone
         const micStream = await navigator.mediaDevices.getUserMedia({
             audio: { sampleRate: 16000, channelCount: 1 }
         });
@@ -78,19 +185,18 @@ export function useLiveApi({ onToolCall }: { onToolCall?: (tool: string, args: a
         micSource.connect(recorder);
         workletRef.current = recorder;
 
-        /* ---------------------- Output Audio Setup -------------------------- */
-
+        // 2. Setup Output
         const outputCtx = new AudioContext({ sampleRate: 24000 });
         outputCtxRef.current = outputCtx;
+        nextPlayTimeRef.current = outputCtx.currentTime;
 
-        /* ------------------------ WebSocket -------------------------------- */
 
+        // 3. Connect WebSocket
         const socket = new WebSocket(`${API_URL}?key=${apiKey}`);
         socketRef.current = socket;
 
         socket.onopen = () => {
             setIsConnected(true);
-
             socket.send(JSON.stringify({
                 setup: {
                     model: MODEL,
@@ -105,52 +211,24 @@ export function useLiveApi({ onToolCall }: { onToolCall?: (tool: string, args: a
                     }
                 }
             }));
-        };
 
-        /* ------------------ Receive Gemini Audio ---------------------------- */
+            // Start loops
+            processMessages();
+            playbackLoop();
+        };
 
         socket.onmessage = async (event) => {
             const text = event.data instanceof Blob ? await event.data.text() : event.data;
             const msg = JSON.parse(text);
-
-            // Handle streamed audio
-            const parts = msg?.serverContent?.modelTurn?.parts ?? [];
-            for (const part of parts) {
-                if (part.inlineData?.mimeType?.startsWith('audio/pcm')) {
-                    const pcm = base64ToFloat32(part.inlineData.data);
-                    handleIncomingPCM(pcm);
-                }
-            }
-
-            // Handle tool calls
-            if (msg.toolCall && onToolCall) {
-                const responses = [];
-
-                for (const fc of msg.toolCall.functionCalls) {
-                    try {
-                        await onToolCall(fc.name, fc.args);
-                        responses.push({ id: fc.id, name: fc.name, response: { result: 'ok' } });
-                    } catch (e: any) {
-                        responses.push({
-                            id: fc.id,
-                            name: fc.name,
-                            response: { error: e.message }
-                        });
-                    }
-                }
-
-                socket.send(JSON.stringify({ toolResponse: { functionResponses: responses } }));
-            }
+            responseQueueRef.current.push(msg);
         };
 
         socket.onclose = () => setIsConnected(false);
         socket.onerror = console.error;
 
-        /* ------------------ Send Mic Audio (Throttled) ---------------------- */
-
+        // 4. Send Mic Audio
         recorder.port.onmessage = (e) => {
             if (socket.readyState !== WebSocket.OPEN) return;
-
             const int16 = float32ToInt16(e.data);
             socket.send(JSON.stringify({
                 realtimeInput: {
@@ -162,63 +240,8 @@ export function useLiveApi({ onToolCall }: { onToolCall?: (tool: string, args: a
             }));
         };
 
-    }, [onToolCall]);
+    }, [processMessages, playbackLoop]);
 
-    /* ---------------------- Incoming Audio Handling ---------------------- */
-
-    function handleIncomingPCM(pcm: Float32Array) {
-        pcmAccumulatorRef.current.push(pcm);
-        accumulatedSamplesRef.current += pcm.length;
-
-        if (accumulatedSamplesRef.current >= TARGET_FRAME_SIZE) {
-            const frame = mergeFloat32(pcmAccumulatorRef.current);
-            pcmAccumulatorRef.current = [];
-            accumulatedSamplesRef.current = 0;
-            enqueueFrame(frame);
-        }
-    }
-
-    function enqueueFrame(frame: Float32Array) {
-        playbackQueueRef.current.push(frame);
-
-        // Start playback only once we have enough buffered
-        if (!isDrainingRef.current && playbackQueueRef.current.length >= MIN_QUEUE_FRAMES) {
-            setIsSpeaking(true);
-            drainPlaybackQueue();
-        }
-    }
-
-    function drainPlaybackQueue() {
-        if (!outputCtxRef.current) return;
-        if (playbackQueueRef.current.length === 0) {
-            isDrainingRef.current = false;
-            setIsSpeaking(false);
-            return;
-        }
-
-        isDrainingRef.current = true;
-        const frame = playbackQueueRef.current.shift()!;
-        scheduleFrame(frame, outputCtxRef.current);
-
-        setTimeout(drainPlaybackQueue, 20);
-    }
-
-    function scheduleFrame(frame: Float32Array, ctx: AudioContext) {
-        const buffer = ctx.createBuffer(1, frame.length, 24000);
-        buffer.copyToChannel(frame as Float32Array<ArrayBuffer>, 0);
-
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-
-        const now = ctx.currentTime;
-        if (nextPlayTimeRef.current < now) {
-            nextPlayTimeRef.current = now + 0.05; // jitter safety
-        }
-
-        source.start(nextPlayTimeRef.current);
-        nextPlayTimeRef.current += buffer.duration;
-    }
 
     /* ------------------------- Disconnect -------------------------------- */
 
@@ -228,35 +251,34 @@ export function useLiveApi({ onToolCall }: { onToolCall?: (tool: string, args: a
         inputCtxRef.current?.close();
         outputCtxRef.current?.close();
 
+        // Stop any currently playing audio
+        stopAllScheduledAudio();
+
         socketRef.current = null;
         micStreamRef.current = null;
         inputCtxRef.current = null;
         outputCtxRef.current = null;
 
-        playbackQueueRef.current = [];
-        pcmAccumulatorRef.current = [];
-        accumulatedSamplesRef.current = 0;
-        nextPlayTimeRef.current = 0;
+        responseQueueRef.current = [];
+        audioQueueRef.current = [];
 
         setIsConnected(false);
         setIsSpeaking(false);
     }, []);
 
+    // Ensure processing loops start when connected (triggered by state change if needed, but we call them in onopen)
+    useEffect(() => {
+        if (isConnected) {
+            processMessages();
+            playbackLoop();
+        }
+    }, [isConnected, processMessages, playbackLoop]);
+
+
     return { connect, disconnect, isConnected, isSpeaking };
 }
 
 /* ============================= Utils ================================= */
-
-function mergeFloat32(chunks: Float32Array[]) {
-    const length = chunks.reduce((s, c) => s + c.length, 0);
-    const result = new Float32Array(length);
-    let offset = 0;
-    for (const c of chunks) {
-        result.set(c, offset);
-        offset += c.length;
-    }
-    return result;
-}
 
 function float32ToInt16(float32: Float32Array) {
     const int16 = new Int16Array(float32.length);
@@ -276,5 +298,10 @@ function base64ToFloat32(base64: string) {
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer) {
-    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
 }
