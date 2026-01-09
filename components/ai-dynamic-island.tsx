@@ -7,7 +7,7 @@ import { useLiveApi } from '@/hooks/use-live-api'
 import { useAIStore } from '@/store/use-ai-store'
 import { cn } from '@/lib/utils'
 
-const API_KEY = process.env.GEMINI_API_KEY || '';
+const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 
 interface AIDynamicIslandProps {
     className?: string
@@ -32,7 +32,7 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
     React.useEffect(() => {
         if (voiceState === 'active' && !isConnected) {
             if (!API_KEY) {
-                alert("Please set GEMINI_API_KEY in .env");
+                alert("Please set NEXT_PUBLIC_GEMINI_API_KEY in .env");
                 setVoiceState('inactive');
                 return;
             }
