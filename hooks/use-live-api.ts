@@ -3,8 +3,8 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-const MODEL = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
-const API_URL = `wss://generativelanguage.googleapis.com/v1beta/${MODEL}:stream`;
+const MODEL = 'models/gemini-2.0-flash-exp';
+const API_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
 
 interface UseLiveApiProps {
     onToolCall?: (toolName: string, args: any) => Promise<any>;
@@ -36,19 +36,17 @@ export function useLiveApi({ onToolCall }: UseLiveApiProps = {}) {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } });
             streamRef.current = stream;
 
-            const audioContext = new AudioContext({ sampleRate: 24000 }); // Output rate
-            audioContextRef.current = audioContext;
-
-            await audioContext.audioWorklet.addModule('/audio-processor.js');
-
-            const source = audioContext.createMediaStreamSource(stream);
-            const processor = new AudioWorkletNode(audioContext, 'audio-recorder');
-
+            // Input Context (16kHz)
+            const inputContext = new AudioContext({ sampleRate: 16000 });
+            await inputContext.audioWorklet.addModule('/audio-processor.js');
+            const source = inputContext.createMediaStreamSource(stream);
+            const processor = new AudioWorkletNode(inputContext, 'audio-recorder');
             source.connect(processor);
-            // Processor doesn't need to connect to destination for recording, 
-            // but we might want to if we were monitoring. Here we don't.
-
             audioWorkletNodeRef.current = processor;
+
+            // Output Context (24kHz for Gemini)
+            const outputContext = new AudioContext({ sampleRate: 24000 });
+            audioContextRef.current = outputContext;
 
             // 2. Setup WebSocket
             // WSS URL with key param
@@ -60,12 +58,15 @@ export function useLiveApi({ onToolCall }: UseLiveApiProps = {}) {
                 setIsConnected(true);
                 console.log('Gemini Live Connected');
 
+                const inputRate = inputContext.sampleRate;
+                console.log("Audio Input Sample Rate:", inputRate);
+
                 // Initial Setup Message
                 const setupMsg = {
                     setup: {
                         model: MODEL,
                         systemInstruction: {
-                            parts: [{ text: `You are a helpful research co-author. Here is the context of the current document user is working on:\n${context}` }]
+                            parts: [{ text: `You are a helpful research co-author. The user is writing a document. Here implies context:\n${context}` }]
                         },
                         tools: [
                             {
@@ -95,24 +96,28 @@ export function useLiveApi({ onToolCall }: UseLiveApiProps = {}) {
                         }
                     }
                 };
+                console.log("Sending Setup Config:", setupMsg);
                 socket.send(JSON.stringify(setupMsg));
             };
 
             socket.onmessage = async (event) => {
-                const msg = JSON.parse(event.data);
+                let text = event.data;
+                if (event.data instanceof Blob) {
+                    text = await event.data.text();
+                }
+                const msg = JSON.parse(text);
 
                 // Handle Audio
                 if (msg.serverContent?.modelTurn?.parts) {
+                    // console.log("Received Audio Part");
                     for (const part of msg.serverContent.modelTurn.parts) {
-                        if (part.inlineData && part.inlineData.mimeType.startsWith('audio/pcm')) {
-                            // Normalize PCM
+                        if (part.inlineData && part.inlineData.mimeType.startsWith('audio/pcm')) { // Normalize PCM
                             const base64 = part.inlineData.data;
                             const pcmData = base64ToFloat32(base64);
-                            scheduleAudio(pcmData, audioContext);
+                            if (audioContextRef.current) {
+                                scheduleAudio(pcmData, audioContextRef.current);
+                            }
                         }
-                    }
-                    if (msg.serverContent.turnComplete) {
-                        // Determine end of turn
                     }
                 }
 
@@ -157,14 +162,17 @@ export function useLiveApi({ onToolCall }: UseLiveApiProps = {}) {
                 console.error('Socket Error:', err);
             };
 
-            socket.onclose = () => {
-                console.log('Socket Closed');
+            socket.onclose = (event) => {
+                console.log('Socket Closed', event.code, event.reason);
                 setIsConnected(false);
             };
 
             // 3. Data Flow: Worklet -> Socket
             processor.port.onmessage = (e) => {
                 const float32Data = e.data as Float32Array;
+                // Simple Downsampling if rate > 16000? 
+                // For prototype, we blindly send.
+
                 // Convert Float32 to Int16 PCM Base64
                 const int16Data = float32ToInt16(float32Data);
                 const base64Data = arrayBufferToBase64(int16Data.buffer);
