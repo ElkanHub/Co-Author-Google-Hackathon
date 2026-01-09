@@ -38,6 +38,7 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
     // Control flags for loops
     const isProcessingRef = useRef(false);
     const isPlayingRef = useRef(false);
+    const shouldIgnoreResponseRef = useRef(false);
 
     // Audio scheduling
     // Audio scheduling
@@ -80,9 +81,14 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
                 const parts = msg?.serverContent?.modelTurn?.parts ?? [];
                 for (const part of parts) {
                     if (part.inlineData?.mimeType?.startsWith('audio/pcm')) {
+                        if (shouldIgnoreResponseRef.current) continue; // Drop audio if ignoring
                         const pcm = base64ToFloat32(part.inlineData.data);
                         audioQueueRef.current.push(pcm);
                     }
+                }
+
+                if (msg.serverContent?.turnComplete) {
+                    shouldIgnoreResponseRef.current = false;
                 }
 
                 // Handle Tool Calls
@@ -294,8 +300,12 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
 
     /* ------------------------- Helper Functions -------------------------- */
 
-    const sendText = useCallback((text: string, endTurn = true) => {
+    const sendText = useCallback((text: string, mode: 'interactive' | 'silent' = 'interactive') => {
         if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
+
+        if (mode === 'silent') {
+            shouldIgnoreResponseRef.current = true;
+        }
 
         socketRef.current.send(JSON.stringify({
             clientContent: {
@@ -303,7 +313,7 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
                     role: 'user',
                     parts: [{ text }]
                 }],
-                turnComplete: endTurn
+                turnComplete: true
             }
         }));
     }, []);

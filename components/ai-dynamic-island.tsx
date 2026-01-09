@@ -57,7 +57,7 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
             if (editorTimeoutRef.current) clearTimeout(editorTimeoutRef.current);
             editorTimeoutRef.current = setTimeout(() => {
                 lastEditorContentRef.current = content;
-                sendText(`[EDITOR_UPDATE]\n${content}`, false);
+                sendText(`[EDITOR_UPDATE]\n${content}`, 'silent');
             }, 800); // 800ms debounce
         });
         return () => {
@@ -80,7 +80,7 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
                 lastAIContentRef.current = summary;
                 // We send a simplified update
                 const readableSummary = state.cards.map(c => `[${c.type.toUpperCase()}] ${c.content}`).join('\n');
-                sendText(`[AI_SPACE_UPDATE]\n${readableSummary}`, false);
+                sendText(`[AI_SPACE_UPDATE]\n${readableSummary}`, 'silent');
             }, 1500); // 1.5s debounce for AI space
         });
 
@@ -136,11 +136,12 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
                 
 PROTOCOL:
 1. I will stream you real-time updates of the document labeled [EDITOR_UPDATE] and the sidebar labeled [AI_SPACE_UPDATE].
-2. Treat these updates as "Silent Context". Do NOT respond to them unless:
-    - You see a clear request for help in the text (e.g., "[Help me here]").
-    - You spot a critical issue or have a brilliant suggestion that warrants interruption.
-    - The user explicitly asks you something verbally.
-3. Otherwise, just acknowledge internally and keep your understanding fresh.
+2. Acknowledgement Strategy:
+    - Briefly acknowledge these updates (e.g. "Okay").
+    - **CRITICAL**: Do NOT generate long responses.
+3. Interaction:
+    - If the user asks for help in the text (e.g., "[Help me here]"), SPEAK UP immediately.
+    - Otherwise, stay silent and attentive.
 4. When you speak, be concise, professional, and helpful.`,
                 tools: tools
             });
