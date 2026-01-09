@@ -44,6 +44,17 @@ The core intelligence of the application runs on a sophisticated decision funnel
 - **Persistence**: Cards are synced to Supabase and persist across reloads.
 - **Filtering**: Filter capabilities for "All", "Action", "Suggestion", "Citation", etc.
 
+### 5. Voice Agent Experience ("The Active Co-Author")
+- **Real-Time Context Streaming**: The agent receives a live stream of your editor content and AI space cards via WebSocket.
+- **Silent Context Protocol**: The agent is aware of every change you make but treats it as "Silent Context". It will NOT speak unless:
+    - You verbally ask a question.
+    - You write a direct request (e.g., `[Help me here]`).
+- **Tools & capabilities**:
+    - `read_editor`: Can read the full document content on demand.
+    - `write_to_ai_space`: Can proactively create suggestions or insights cards in the sidebar.
+    - `read_ai_space`: Can read existing cards to understand previous context.
+- **Immediate UI Feedback**: When the agent "writes" a card, it appears instantly in the UI for a seamless experience.
+
 ## Architecture
 
 ### Directory Structure

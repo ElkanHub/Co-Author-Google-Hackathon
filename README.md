@@ -18,6 +18,11 @@ We've engineered "restraint" into the AI. It uses a 7-layer decision stack to re
 - **Sanitized Inputs**: Protects against DoS and malformed data.
 - **Intent Scanning**: Blocks malicious roleplay and jailbreak attempts.
 
+###  Live Voice Co-Author
+- **Active Listening**: The AI listens to your voice and "reads" your document in real-time.
+- **Silent Context**: It observes your changes silently and only speaks when you ask for help.
+- **Proactive Assist**: Can instantly write researched facts, citations, or suggestions directly to your sidebar on command.
+
 ###  Premium Editor Experience
 - **Distraction-Free**: Minimalist interface focused on your words.
 - **Smart Context Menu**: Right-click for AI powers (Cite, Paraphrase, Expand) or standard tools.
