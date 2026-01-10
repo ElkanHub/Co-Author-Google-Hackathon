@@ -15,6 +15,7 @@ import {
 import { HomeIcon } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { ModeToggle } from "@/components/mode-toggle"
 
 
 export default function EditorPage() {
@@ -159,7 +160,7 @@ export default function EditorPage() {
                             />
 
                             <div className="flex items-center gap-4">
-                                {/* Future tools */}
+                                <ModeToggle />
                             </div>
                         </header>
 
