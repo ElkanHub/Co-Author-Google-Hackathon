@@ -1,6 +1,13 @@
 # Co-Author: The Disciplined AI Writing Partner - Autonomy First Approach
 
 Co-Author is an experimental AI writing environment that treats the AI not as a tool, but as a **disciplined colleague**. It doesn't spam you with autocomplete suggestions. Instead, it observes your writing, thinks silently, and only interrupts when it has something valuable to say - **An Autonomous co-author**.
+### Project preview slides at the bottom.
+---
+
+## Public preview link
+https://co-author.vercel.app/
+
+
 
 ![Co-Author Interface](./public/header-image.png)
 
@@ -56,3 +63,21 @@ We've engineered "restraint" into the AI. It uses a 7-layer decision stack to re
 
 ## Contributing
 This is a research project exploring Human-AI collaboration dynamics. Feel free to open issues or PRs if you have ideas on how to make the AI even smarter (or quieter!).
+
+---
+
+## Project Preview Slides
+<!-- 13 slides -->
+![Project Preview Slides](/public/slides/1.jpg)
+![Project Preview Slides](/public/slides/2.jpg)
+![Project Preview Slides](/public/slides/3.jpg)
+![Project Preview Slides](/public/slides/4.jpg)
+![Project Preview Slides](/public/slides/5.jpg)
+![Project Preview Slides](/public/slides/6.jpg)
+![Project Preview Slides](/public/slides/7.jpg)
+![Project Preview Slides](/public/slides/8.jpg)
+![Project Preview Slides](/public/slides/9.jpg)
+![Project Preview Slides](/public/slides/10.jpg)
+![Project Preview Slides](/public/slides/11.jpg)
+![Project Preview Slides](/public/slides/12.jpg)
+![Project Preview Slides](/public/slides/13.jpg)

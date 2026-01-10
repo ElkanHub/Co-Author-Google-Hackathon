@@ -39,7 +39,7 @@ The core intelligence of the application runs on a sophisticated decision funnel
 - **Session Renaming**: Click the header title to rename your research session instantly.
 - **Performance**: Optimized engine uses event listeners instead of render loops for zero-latency typing.
 
-### 4. AI Research Space (Sidebar)
+### 4. AI Space (Sidebar)
 - **Active Cards**: Displays AI suggestions, actions, and feedback requests.
 - **Persistence**: Cards are synced to Supabase and persist across reloads.
 - **Filtering**: Filter capabilities for "All", "Action", "Suggestion", "Citation", etc.
