@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, Trash2, Search, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { HelpButton } from '@/components/help-button'
 import { v4 as uuidv4 } from 'uuid'
 
 interface Document {
@@ -108,13 +109,16 @@ export default function Dashboard() {
             <p className="text-zinc-500 text-sm">Manage your co-authored sessions</p>
           </div>
 
-          <button
-            onClick={handleCreateSession}
-            className="flex items-center gap-2 bg-zinc-900 dark:bg-white text-zinc-50 dark:text-zinc-900 px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Session</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <HelpButton />
+            <button
+              onClick={handleCreateSession}
+              className="flex items-center gap-2 bg-zinc-900 dark:bg-white text-zinc-50 dark:text-zinc-900 px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Session</span>
+            </button>
+          </div>
         </header>
 
         {/* Search & Filters */}
@@ -166,7 +170,7 @@ export default function Dashboard() {
                       <h3 className="font-semibold text-base truncate pr-4 text-zinc-900 dark:text-zinc-100">{doc.title || 'Untitled'}</h3>
                       <div className="flex items-center gap-3 text-xs text-zinc-500">
                         <span>Edited {new Date(doc.updated_at).toLocaleDateString()}</span>
-                        
+
                       </div>
                     </div>
                   </div>
