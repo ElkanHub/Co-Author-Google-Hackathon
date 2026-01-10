@@ -12,6 +12,9 @@ import {
     ResizablePanel,
     ResizablePanelGroup,
 } from "@/components/ui/resizable"
+import { HomeIcon } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 
 export default function EditorPage() {
@@ -121,6 +124,12 @@ export default function EditorPage() {
                         {/* Header */}
                         <header className="relative h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center px-6 justify-between flex-shrink-0">
                             <div className="flex items-center gap-2">
+                                {/* back button */}
+                                <Link href="/">
+                                    <Button variant="ghost" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300">
+                                        <HomeIcon className="h-5 w-5" />
+                                    </Button>
+                                </Link>
                                 <span className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Co-Author</span>
                                 {isEditing ? (
                                     <input
