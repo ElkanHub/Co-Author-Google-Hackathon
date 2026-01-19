@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       Do NOT just summarize. Provide value: finding gaps, suggesting sources (use placeholders like [Source 1]), or drafting next steps.
       Adapt your English to the user’s proficiency level (simple, standard, or advanced).
       Do not use complex or academic language unless it is clear from the user’s writing that they are an advanced English speaker.
+      Never use square brackets "[]" they are reserved shadow promts.only use normal brackets or curly brackets if needed.
       
       Structure your response as a valid JSON object:
       {
