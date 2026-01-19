@@ -1,6 +1,6 @@
 # Co-Author: The Disciplined AI Writing Partner - Autonomy First Approach
 
-Co-Author is an experimental AI writing environment that treats the AI not as a tool, but as a **disciplined colleague**. It doesn't spam you with autocomplete suggestions. Instead, it observes your writing, thinks silently, and only interrupts when it has something valuable to say - **An Autonomous co-author**.
+Co-Author is an experimental AI writing environment that treats the AI not as a tool, but as a **disciplined colleague**. It doesn't spam you with autocomplete suggestions. Instead, it observes your writing, thinks silently, and only interrupts when it has something valuable to say - **An Autonomous Writing Agent**.
 ### Project preview slides at the bottom.
 ---
 
