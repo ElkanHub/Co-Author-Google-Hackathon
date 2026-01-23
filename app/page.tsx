@@ -7,6 +7,8 @@ import { MaturityStack } from '@/components/maturity-stack';
 import { techStack } from '@/lib/landingPage/data';
 import {
   PenTool,
+  Sparkles,
+  SquareDashedMousePointerIcon,
   Mic,
   Cpu,
   Lock,
@@ -18,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { HelpButton } from '@/components/help-button';
+
 
 const App: React.FC = () => {
   const { scrollY } = useScroll();
@@ -160,6 +163,61 @@ const App: React.FC = () => {
               title="Real-time Voice"
               desc="Talk through ideas while the AI quietly handles background research using WebSockets & AudioWorklets."
             />
+          </div>
+
+          {/* Step In Feature Highlight */}
+          <div className="mb-32 mt-16 p-12 bg-zinc-900 text-white rounded-none overflow-hidden relative group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+              <SquareDashedMousePointerIcon size={200} />
+            </div>
+            <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6 leading-tight">
+                  Hand over the pen. <br />
+                  <span className="italic font-medium text-gray-200 underline">Step In Mode.</span>
+                </h2>
+                <p className="text-gray-400 text-lg font-light mb-8 leading-relaxed">
+                  Delegated authorship with complete transparency. For the first time, hand over full editorial control to an AI that thinks, plans, executes, and self-critiques—just like a human co-author.
+                </p>
+                <div className="flex gap-4">
+                  <Link href="/sessions">
+                    <Button variant="outline" className="text-white border-white hover:bg-white hover:text-black rounded-none font-serif font-bold px-8">Try Step In</Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="bg-zinc-800/50 p-6 rounded-none border-[10px] border-white/5 backdrop-blur-[2px]">
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shrink-0">1</div>
+                    <div>
+                      <h4 className="font-bold text-sm mb-1 uppercase tracking-wider text-white-300">Planning</h4>
+                      <p className="text-xs text-gray-400">Reads your instructions and formulates a deep editorial strategy.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shrink-0">2</div>
+                    <div>
+                      <h4 className="font-bold text-sm mb-1 uppercase tracking-wider text-white-300">Execution</h4>
+                      <p className="text-xs text-gray-400">Rewrites, continues, or polishes your work directly in the editor.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shrink-0">3</div>
+                    <div>
+                      <h4 className="font-bold text-sm mb-1 uppercase tracking-wider text-white-300">Evaluation</h4>
+                      <p className="text-xs text-gray-400">Self-evaluates the output against your goals and finds weak points.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shrink-0">4</div>
+                    <div>
+                      <h4 className="font-bold text-sm mb-1 uppercase tracking-wider text-white-300">Refinement</h4>
+                      <p className="text-xs text-gray-400">Makes final surgical adjustments to ensure absolute perfection.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <MaturityStack />

@@ -20,6 +20,7 @@ We've engineered "restraint" into the AI. It uses a 7-layer decision stack to re
 - **Cooldowns**: It won't bug you more than once every 30 seconds.
 - **Shadow Prompting**: Want manual control? Just type `[Explain this concept]` on a new line.THis is a secondary input to interact with the Ai, allowing further control and desired output.
 - **Full Control**: Use the **Pause Button** in the Dynamic Island to completely silence the AI when you need deep focus.
+- **Step In Mode**: The peak capability of Co-Author. Hand over full editorial control to the AI. It parses your instructions, plans its approach, executes the writing, and self-critiques its output to ensure maximum alignment and quality.
 
 ###  Built-in Security
 - **Sanitized Inputs**: Protects against DoS and malformed data.

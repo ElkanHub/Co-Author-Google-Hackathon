@@ -9,7 +9,7 @@ interface HelpModalProps {
     onClose: () => void
 }
 
-const TOTAL_SLIDES = 13
+const TOTAL_SLIDES = 14
 
 export function HelpModal({ isOpen, onClose }: HelpModalProps) {
     const [currentSlide, setCurrentSlide] = useState(1)

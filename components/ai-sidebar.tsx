@@ -3,7 +3,21 @@
 import { useState } from 'react'
 import { cn } from "@/lib/utils"
 import { useAIStore, AICard } from "@/store/use-ai-store"
-import { Sparkles, PentagonIcon, PenToolIcon, BookOpen, MessageSquare, AlertCircle, Copy, Trash2, Check, Search, X, Zap } from "lucide-react"
+import {
+    Sparkles,
+    SquareDashedMousePointerIcon,
+    PentagonIcon,
+    PenToolIcon,
+    BookOpen,
+    MessageSquare,
+    AlertCircle,
+    Copy,
+    Trash2,
+    Check,
+    Search,
+    X,
+    Zap
+} from "lucide-react"
 import { Typewriter } from "@/components/ui/typewriter"
 import { marked } from "marked"
 
@@ -50,16 +64,16 @@ export function AISidebar({ className }: AISidebarProps) {
                             }}
                             disabled={isStepInActive}
                             className={cn(
-                                "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+                                "flex items-center gap-1.5 px-2 py-1 rounded-none text-[10px] font-bold uppercase tracking-wider transition-all",
                                 isStepInActive
                                     ? "bg-indigo-100 text-indigo-500 dark:bg-indigo-500/20 animate-pulse"
                                     : "bg-indigo-500 text-white hover:bg-indigo-600 shadow-sm shadow-indigo-500/20"
                             )}
                         >
-                            <Sparkles className="w-3 h-3" />
+                            <SquareDashedMousePointerIcon className="w-3 h-3" />
                             {isStepInActive ? "Stepping In..." : "Step In"}
                         </button>
-                        <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Live</span>
+                        {/* <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Live</span> */}
                     </div>
                 </div>
 

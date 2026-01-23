@@ -12,6 +12,8 @@ I wanted silence to mean intelligence, and intervention to mean value.
 Using a **7-Layer Maturity Stack**, the AI waits, evaluates intent, enforces cooldowns, justifies interruptions, and respects contribution limits. The result is an AI that helps with outlining, citations, analysis, paraphrasing, and research — without hijacking the writing process.  
 A real-time voice agent adds a human layer, allowing me to talk through ideas while the AI quietly handles background research.
 
+The flagship **“Step In”** feature allows for delegated authorship; with a single click, I can hand over full editorial control to the AI. It reads my instructions, develops a plan, executes the writing, evaluates its own work, and refines the draft until it meets a high standard—all while maintaining complete transparency through "Thought Cards."
+
 ---
 
 ## How I built it
@@ -35,6 +37,7 @@ Security was also critical; preventing prompt injection and malicious inputs whi
 - Building a genuinely **non-intrusive AI** that earns the right to interrupt.
 - Designing and implementing the **7-Layer Maturity Stack** from scratch.
 - Achieving smooth real-time voice interaction using AudioWorklets.
+- Implementing the **"Step In" agentic loop** (Plan -> Execute -> Evaluate -> Refine).
 - Creating a clean separation between the writing space and the AI’s contribution space.
 - Implementing a security layer that actively blocks jailbreak attempts.
 
