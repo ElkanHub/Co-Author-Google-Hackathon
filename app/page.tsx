@@ -1,216 +1,283 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { Plus, Trash2, Search, FileText, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { HelpButton } from '@/components/help-button'
-import { v4 as uuidv4 } from 'uuid'
+import React, { useEffect, useState } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { StickySection } from '@/components/sticky-section';
+import { MaturityStack } from '@/components/maturity-stack';
+import { techStack } from '@/lib/landingPage/data';
+import {
+  PenTool,
+  Mic,
+  Cpu,
+  Lock,
+  ArrowDown,
+  Feather,
+  Github,
+  Twitter
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { HelpButton } from '@/components/help-button';
 
-interface Document {
-  id: string
-  title: string
-  updated_at: string
-  last_active_at: string
-  plain_text?: string
-}
-
-const ITEMS_PER_PAGE = 15
-
-export default function Dashboard() {
-  const router = useRouter()
-  const supabase = createClient()
-
-  const [documents, setDocuments] = useState<Document[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [sortOption, setSortOption] = useState<'updated_at' | 'last_active_at'>('updated_at')
-  const [page, setPage] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
-
-  // Fetch Documents
-  const fetchDocuments = async () => {
-    setIsLoading(true)
-    try {
-      let query = supabase
-        .from('documents')
-        .select('*', { count: 'exact' })
-        .order(sortOption, { ascending: false })
-        .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1)
-
-      if (searchQuery) {
-        query = query.ilike('title', `%${searchQuery}%`)
-      }
-
-      const { data, error, count } = await query
-
-      if (error) throw error
-
-      setDocuments(data || [])
-      setTotalCount(count || 0)
-    } catch (err) {
-      console.error('Error fetching documents:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchDocuments()
-  }, [page, searchQuery, sortOption])
-
-  const handleCreateSession = async () => {
-    const newId = uuidv4()
-    // Optimistic redirect, DB insert happens in editor on first save usually, OR we insert a blank one now.
-    // Let's insert a blank one to be safe and have it appear in list immediately if they go back.
-    const { error } = await supabase.from('documents').insert({
-      id: newId,
-      title: 'Untitled Research',
-      content: {},
-      plain_text: ''
-    })
-
-    if (!error) {
-      router.push(`/editor/${newId}`)
-    } else {
-      console.error("Failed to create session", error)
-    }
-  }
-
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault() // Prevent navigation
-    e.stopPropagation()
-
-    if (!confirm('Are you sure you want to delete this session?')) return
-
-    try {
-      const { error } = await supabase.from('documents').delete().eq('id', id)
-      if (error) throw error
-
-      // Refresh list
-      fetchDocuments()
-    } catch (err) {
-      console.error('Error deleting document:', err)
-    }
-  }
-
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
+const App: React.FC = () => {
+  const { scrollY } = useScroll();
+  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
+  const heroY = useTransform(scrollY, [0, 300], [0, 100]);
+  const [activeTech, setActiveTech] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black font-sans text-zinc-900 dark:text-zinc-100 p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="bg-paper text-ink min-h-screen selection:bg-black selection:text-white">
 
-        {/* Header */}
-        <header className="flex items-center justify-between">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 px-6 py-2 flex justify-between items-center z-50 mix-blend-difference text-white pointer-events-none backdrop-blur-sm">
+        <div className="font-serif font-bold text-xl pointer-events-auto cursor-pointer">Co-Author</div>
+
+        <div className="flex items-center gap-4 pointer-events-auto">
+          <Link href="/sessions">
+            <Button variant="outline" className='rounded-none text-primary font-serif font-bold'>Start Writing</Button>
+          </Link>
+          <a href="https://github.com/ElkanHub/Co-Author-Google-Hackathon" className="hover:opacity-70 transition-opacity"><Github size={20} /></a>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <header className="h-screen flex flex-col items-center justify-center relative overflow-hidden px-6">
+        <motion.div
+          style={{ opacity: heroOpacity, y: heroY }}
+          className="text-center max-w-4xl mx-auto z-10"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="mb-6 flex justify-center"
+          >
+            <div className="h-px w-24 bg-ink mb-8" />
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+            className="text-5xl md:text-8xl font-serif font-light mb-8 tracking-tight"
+          >
+            Silence is <br />
+            <span className="italic font-medium">Intelligence</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.6 }}
+            className="text-lg md:text-xl font-sans text-subtle max-w-xl mx-auto leading-relaxed"
+          >
+            An autonomous AI writing partner that earns the right to interrupt.
+            <br />
+            Built with Gemini 3.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2, duration: 1 }}
+          className="absolute bottom-12 animate-bounce text-subtle"
+        >
+          <ArrowDown size={24} />
+        </motion.div>
+      </header>
+
+      {/* Inspiration Section */}
+      <StickySection className="bg-white">
+        <div className="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto px-6 items-center">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">My Research</h1>
-            <p className="text-zinc-500 text-sm">Manage your co-authored sessions</p>
+            <span className="text-xs font-bold tracking-widest uppercase text-gray-400 mb-4 block">The Inspiration</span>
+            <h2 className="text-black/90 text-3xl md:text-4xl font-serif font-bold mb-8 leading-tight">
+              Real collaboration isn't loud. <br /> It's intentional.
+            </h2>
+            <div className="prose prose-lg text-subtle font-serif">
+              <p className="mb-6">
+                Most AI writing tools feel like an overexcited intern—constantly interrupting, flooding the screen with suggestions, and breaking flow.
+              </p>
+              <p>
+                The inspiration behind <strong className="text-ink">Co-Author</strong> came from a simple question:
+                <em> What if AI behaved like a disciplined, thoughtful co-author instead of a reactive chatbot?</em>
+              </p>
+              <p className="mt-4 border-l-4 border-black pl-4 italic text-ink">
+                "I wanted silence to mean intelligence, and intervention to mean value."
+              </p>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <HelpButton />
-            <button
-              onClick={handleCreateSession}
-              className="flex items-center gap-2 bg-zinc-900 dark:bg-white text-zinc-50 dark:text-zinc-900 px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity"
+          <div className="relative h-96 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+            {/* Abstract visual for "Noise vs Silence" */}
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-black via-transparent to-transparent" />
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="p-8 bg-white shadow-xl rounded-sm max-w-xs z-10 border border-gray-100"
             >
-              <Plus className="w-4 h-4" />
-              <span>New Session</span>
-            </button>
+              <div className="flex gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-2 bg-gray-200 rounded w-full"></div>
+                <div className="h-2 bg-gray-200 rounded w-5/6"></div>
+                <div className="h-2 bg-gray-200 rounded w-4/6"></div>
+                <motion.div
+                  initial={{ width: 0 }}
+                  whileInView={{ width: "40%" }}
+                  transition={{ duration: 1, delay: 0.5 }}
+                  className="h-2 bg-blue-500 rounded"
+                ></motion.div>
+              </div>
+              <div className="mt-4 text-xs text-gray-400 font-mono">
+                &gt; Analyzing intent...<br />
+                &gt; High relevance (0.92)<br />
+                &gt; Suggesting edit...
+              </div>
+            </motion.div>
           </div>
-        </header>
+        </div>
+      </StickySection>
 
-        {/* Search & Filters */}
-        <div className="flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Search sessions..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }} // Reset to page 1 on search
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-500/20"
+      {/* What it Does (Features) */}
+      <section className="py-32 px-6 bg-paper">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-black/90 grid md:grid-cols-3 gap-8 mb-24">
+            <FeatureCard
+              icon={<Feather size={32} />}
+              title="Autonomous Partner"
+              desc="Observes writing in real-time, contributing only when genuinely useful using a Notion-style research editor."
+            />
+            <FeatureCard
+              icon={<Cpu size={32} />}
+              title="Context Engine"
+              desc="Treats the entire document as living context, allowing for deep analysis and paraphrasing without hijacking."
+            />
+            <FeatureCard
+              icon={<Mic size={32} />}
+              title="Real-time Voice"
+              desc="Talk through ideas while the AI quietly handles background research using WebSockets & AudioWorklets."
             />
           </div>
-          <select
-            value={sortOption}
-            onChange={(e) => setSortOption(e.target.value as any)}
-            className="px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-500/20"
-          >
-            <option value="updated_at">Last Edited</option>
-            <option value="last_active_at">Last Opened</option>
-          </select>
+
+          <MaturityStack />
+        </div>
+      </section>
+
+      {/* Tech Stack & How Built */}
+      <section className="py-32 bg-ink text-paper relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+          {/* Grid pattern */}
+          <div className="w-full h-full" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
         </div>
 
-        {/* Session List */}
-        <div className="min-h-[400px]">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
-            </div>
-          ) : documents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-zinc-400 gap-2 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
-              <FileText className="w-8 h-8 opacity-50" />
-              <p>No research sessions found.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {documents.map(doc => (
-                <Link
-                  key={doc.id}
-                  href={`/editor/${doc.id}`}
-                  className="group flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm hover:shadow-md relative"
-                >
-                  <div className="flex items-center gap-4 overflow-hidden">
-                    <div className="p-2 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 flex-shrink-0">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-base truncate pr-4 text-zinc-900 dark:text-zinc-100">{doc.title || 'Untitled'}</h3>
-                      <div className="flex items-center gap-3 text-xs text-zinc-500">
-                        <span>Edited {new Date(doc.updated_at).toLocaleDateString()}</span>
-
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={(e) => handleDelete(e, doc.id)}
-                    className="p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-zinc-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalCount > ITEMS_PER_PAGE && (
-          <div className="flex items-center justify-center gap-4 py-4">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 disabled:opacity-50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-sm text-zinc-500">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-800 disabled:opacity-50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
+          <div className="mb-16">
+            <h2 className="text-4xl font-serif font-bold mb-6">Built for Performance</h2>
+            <p className="text-gray-400 max-w-2xl text-lg font-light">
+              Real-time systems demand real engineering. Shortcuts in audio, scheduling, or buffering always surface as UX problems.
+            </p>
           </div>
-        )}
 
-      </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
+            {techStack.map((tech, idx) => (
+              <motion.div
+                key={tech.name}
+                onMouseEnter={() => setActiveTech(idx)}
+                onMouseLeave={() => setActiveTech(null)}
+                className={`p-6 rounded border transition-all duration-300 cursor-default ${activeTech === idx
+                  ? 'border-white bg-white/10'
+                  : 'border-white/10 hover:border-white/30'
+                  }`}
+              >
+                <h3 className="text-xl font-bold font-sans mb-1">{tech.name}</h3>
+                <p className="text-sm text-gray-400">{tech.role}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-24 grid md:grid-cols-2 gap-16">
+            <div>
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                <Lock className="text-gray-400" /> Security First
+              </h3>
+              <p className="text-gray-400 leading-relaxed">
+                Preventing prompt injection was critical. I implemented a security layer that actively blocks jailbreak attempts while allowing "Shadow Prompts" for intent scanning.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                <Mic className="text-gray-400" /> Audio Engineering
+              </h3>
+              <p className="text-gray-400 leading-relaxed">
+                To solve jitter and buffering, I moved playback logic off the main thread entirely using AudioWorklets, achieving smooth, uninterrupted audio.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Learnings & Future */}
+      <section className="py-32 px-6 bg-paper">
+        <div className="max-w-4xl mx-auto">
+          <div className="prose prose-lg mx-auto">
+            <h2 className="text-4xl font-serif font-bold text-center mb-12">Reflection</h2>
+
+            <div className="bg-white p-8 md:p-12 rounded-lg shadow-sm border border-gray-100 mb-16">
+              <h3 className="text-xl font-bold font-sans uppercase tracking-widest text-subtle mb-6">What I Learned</h3>
+              <p className="font-serif text-xl leading-loose text-ink">
+                "I learned that good AI UX is more about <span className="bg-yellow-100 px-1">restraint</span> than raw intelligence. Latency, silence, and timing matter just as much as model quality. Users trust AI more when it behaves like a collaborator, not a performer."
+              </p>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-12 items-start">
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold mb-4 font-serif">What's Next?</h3>
+                <ul className="space-y-4 text-subtle font-sans">
+                  <li className="flex gap-3">
+                    <span className="text-blue-500 font-bold">•</span>
+                    Multi-document reasoning & cross-paper citation mapping.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="text-blue-500 font-bold">•</span>
+                    Refining the voice agent into a true thinking partner.
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="text-blue-500 font-bold">•</span>
+                    Collaborative modes for teams.
+                  </li>
+                </ul>
+              </div>
+              <div className="flex-1">
+                <p className="text-subtle font-serif italic border-l-2 border-gray-200 pl-6 py-2">
+                  Long-term, Co-Author aims to become the standard environment where humans and AI co-write — calmly, deliberately, and at scale.
+                </p>
+                <Link href="https://github.com/Co-Author/Co-Author" target="_blank" className="text-primary font-serif font-bold"><Button variant="outline" className="rounded-none">Check Out the Repo <Github size={16} /></Button></Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className=" text-black/90 bg-white py-12 border-t border-gray-100 text-center">
+        <h2 className="text-2xl font-serif font-bold mb-2">Co-Author</h2>
+        <p className="text-subtle text-sm">Built with precision. Powered by Gemini.</p>
+        <HelpButton />
+
+      </footer>
     </div>
-  )
-}
+  );
+};
+
+const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; desc: string }> = ({ icon, title, desc }) => (
+  <div className="p-8 bg-white rounded-none shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100">
+    <div className="mb-6 text-ink">{icon}</div>
+    <h3 className="text-xl font-bold font-sans mb-3">{title}</h3>
+    <p className="text-subtle leading-relaxed font-serif text-sm">{desc}</p>
+  </div>
+);
+
+export default App;
