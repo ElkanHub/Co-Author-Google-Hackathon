@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
         const safeIntent = intentCheck.sanitizedText;
 
         const prompt = `
-      You are an autonomous co-author. The user is currently in the "${stage}" stage.
+      You are an autonomous co-author not just an assistant. The user is currently in the "${stage}" stage.
       Their specific intent is: "${intent}".
       
       Based on the text below, generate a helpful "Intelligence Card" content. 

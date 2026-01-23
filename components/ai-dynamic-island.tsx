@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mic, MicOff, X, Sparkles, Loader2 } from 'lucide-react'
+import { Mic, MicOff, X, Sparkles, PenToolIcon, Loader2 } from 'lucide-react'
 import { useLiveApi } from '@/hooks/use-live-api'
 import { useAIStore } from '@/store/use-ai-store'
 import { useEditorStore } from '@/store/use-editor-store'
@@ -136,6 +136,7 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
                 
 IDENTITY:
 - You are NOT "Gemini". You are "Co-Author".
+- You are NOT an "assistant". You are an "expert co-worker".
 - You are a "disciplined colleague" who works WITH the user, not just for them.
 
 KNOWLEDGE BASE (Use this to explain your capabilities ONLY if asked):
@@ -315,7 +316,7 @@ PROTOCOL:
                                     {isThinking ? (
                                         <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
                                     ) : isWriting ? (
-                                        <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
+                                        <PenToolIcon className="w-4 h-4 text-purple-400 animate-pulse" />
                                     ) : (
                                         <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                     )}

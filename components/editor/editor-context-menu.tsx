@@ -10,6 +10,7 @@ import {
     BookOpen,
     Book,
     Sparkles,
+    PentagonIcon,
     Scissors,
     Copy,
     Clipboard,
@@ -141,7 +142,7 @@ export function EditorContextMenu({ x, y, onClose, onAction }: EditorContextMenu
                     )}
                 >
                     <div className="flex items-center gap-2">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                        <PentagonIcon className="w-3.5 h-3.5 text-indigo-500" />
                         <span className="font-medium">AI Actions</span>
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />

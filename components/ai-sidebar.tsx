@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { cn } from "@/lib/utils"
 import { useAIStore, AICard } from "@/store/use-ai-store"
-import { Sparkles, BookOpen, MessageSquare, AlertCircle, Copy, Trash2, Check, Search, X, Zap } from "lucide-react"
+import { Sparkles, PentagonIcon, PenToolIcon, BookOpen, MessageSquare, AlertCircle, Copy, Trash2, Check, Search, X, Zap } from "lucide-react"
 import { Typewriter } from "@/components/ui/typewriter"
 import { marked } from "marked"
 
@@ -13,7 +13,7 @@ interface AISidebarProps {
 
 function CardIcon({ type }: { type: AICard['type'] }) {
     switch (type) {
-        case 'suggestion': return <Sparkles className="w-4 h-4 text-purple-400" />
+        case 'suggestion': return <PenToolIcon className="w-4 h-4 text-purple-400" />
         case 'citation': return <BookOpen className="w-4 h-4 text-blue-400" />
         case 'analysis': return <AlertCircle className="w-4 h-4 text-orange-400" />
         case 'action': return <Zap className="w-4 h-4 text-yellow-500" />
@@ -40,7 +40,7 @@ export function AISidebar({ className }: AISidebarProps) {
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-10 space-y-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-indigo-500" />
+                        <PentagonIcon className="w-4 h-4 text-indigo-500" />
                         <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">AI Space</h2>
                     </div>
                     <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Live</span>
