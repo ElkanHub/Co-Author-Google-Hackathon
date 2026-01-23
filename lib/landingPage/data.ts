@@ -2,7 +2,7 @@ import { MaturityLayer, TechItem } from '@/lib/landingPage/types';
 
 export const maturityLayers: MaturityLayer[] = [
   { level: 1, name: "Observe", description: "The AI silently watches keystrokes, building context without acting." },
-  { level: 2, name: "Wait", description: "Enforces a mandatory cooldown to ensure the writer isn't in active flow." },
+  { level: 2, name: "Wait", description: "Enforces a mandatory cooldown to ensure it doesn't block the writer's flow." },
   { level: 3, name: "Evaluate Intent", description: "Analyzes the text: Is the user stuck? Or just pausing for thought?" },
   { level: 4, name: "Draft Solution", description: "Generates a potential contribution in a hidden buffer." },
   { level: 5, name: "Score Relevance", description: "Is this genuinely useful? If the score is low, discard immediately." },
