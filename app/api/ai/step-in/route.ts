@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       Output a valid JSON object with the following structure:
       {
         "plan": "Detailed markdown of your plan.",
-        "execution": "The final revised markdown text for the editor. DO NOT include the instructions heading itself in the output, just the body content.",
+        "execution": "The final revised content in HTML format. Preserve structure with tags like <p>, <h2>, <ul>, etc. DO NOT include the instructions heading itself in the output, just the body content.",
         "evaluation": {
             "score": 0-100,
             "alignment": "How well it aligns with instructions.",
@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
       - No robotic/generic AI language.
       - **No emojis.**
       - Adapt to the user's proficiency level.
+      - **Produce HTML output exclusively** for the "execution" field.
       - If user instructions imply changing existing text, do so. If they imply continuing, do so.
     `;
 

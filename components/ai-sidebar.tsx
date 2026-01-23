@@ -22,7 +22,7 @@ function CardIcon({ type }: { type: AICard['type'] }) {
 }
 
 export function AISidebar({ className }: AISidebarProps) {
-    const { cards } = useAIStore()
+    const { cards, isStepInActive } = useAIStore()
     const [searchQuery, setSearchQuery] = useState('')
     const [activeFilter, setActiveFilter] = useState('All')
 
@@ -46,19 +46,18 @@ export function AISidebar({ className }: AISidebarProps) {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => {
-                                // This will be connected to useStepIn hook
                                 window.dispatchEvent(new CustomEvent('trigger-step-in'));
                             }}
-                            disabled={useAIStore.getState().isStepInActive}
+                            disabled={isStepInActive}
                             className={cn(
                                 "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
-                                useAIStore.getState().isStepInActive
+                                isStepInActive
                                     ? "bg-indigo-100 text-indigo-500 dark:bg-indigo-500/20 animate-pulse"
                                     : "bg-indigo-500 text-white hover:bg-indigo-600 shadow-sm shadow-indigo-500/20"
                             )}
                         >
                             <Sparkles className="w-3 h-3" />
-                            {useAIStore.getState().isStepInActive ? "Stepping In..." : "Step In"}
+                            {isStepInActive ? "Stepping In..." : "Step In"}
                         </button>
                         <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Live</span>
                     </div>
@@ -203,7 +202,7 @@ function AICardItem({ card }: { card: AICard }) {
 
             {/* Content */}
             <div>
-                <Typewriter text={card.content} speed={card.fromDb ? 0 : 0.5} />
+                <Typewriter text={card.content} speed={card.fromDb ? 0 : 0.1} />
             </div>
 
             {/* Actions */}
