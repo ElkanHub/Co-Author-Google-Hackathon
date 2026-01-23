@@ -22,6 +22,7 @@ import { FontSize } from './extensions/font-size'
 import { Indent } from './extensions/indent'
 import { ResizableImage } from './extensions/resizable-image'
 import { useContextEngine } from '@/hooks/use-context-engine';
+import { useStepIn } from '@/hooks/use-step-in';
 import { useDocumentSync } from '@/hooks/use-document-sync';
 import { useState, useCallback, useEffect } from 'react'
 import { EditorContextMenu } from './editor-context-menu'
@@ -96,6 +97,9 @@ export function UserEditor({ documentId }: UserEditorProps) {
 
     // 2. AI Autonomy Loop (The Mature Engine)
     useContextEngine(editor, documentId || null, isSyncing);
+
+    // 3. Step In Mode
+    useStepIn(editor, documentId || null);
 
     // Cleanup
     useEffect(() => {

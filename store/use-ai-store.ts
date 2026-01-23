@@ -23,6 +23,7 @@ interface AIStore {
     voiceState: VoiceState
     isMuted: boolean
     isPaused: boolean
+    isStepInActive: boolean
     cards: AICard[]
 
     setWriterState: (state: WriterState) => void
@@ -31,6 +32,7 @@ interface AIStore {
     toggleMute: () => void
     setIsPaused: (isPaused: boolean) => void
     togglePause: () => void
+    setStepInActive: (active: boolean) => void
     addCard: (card: AICard) => void
     removeCard: (id: string) => void
     clearCards: () => void
@@ -46,6 +48,7 @@ export const useAIStore = create<AIStore>((set, get) => ({
     voiceState: 'inactive',
     isMuted: false,
     isPaused: false,
+    isStepInActive: false,
     cards: [],
 
     setWriterState: (state) => set({ writerState: state }),
@@ -54,6 +57,7 @@ export const useAIStore = create<AIStore>((set, get) => ({
     toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
     setIsPaused: (isPaused) => set({ isPaused }),
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
+    setStepInActive: (active) => set({ isStepInActive: active }),
     addCard: (card) => set((state) => ({ cards: [card, ...state.cards] })),
     removeCard: (id: string) => set((state) => ({ cards: state.cards.filter(c => c.id !== id) })),
     clearCards: () => set({ cards: [] }),

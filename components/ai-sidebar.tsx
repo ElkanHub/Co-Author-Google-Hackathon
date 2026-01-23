@@ -43,7 +43,25 @@ export function AISidebar({ className }: AISidebarProps) {
                         <PentagonIcon className="w-4 h-4 text-indigo-500" />
                         <h2 className="text-sm font font-semibold text-zinc-900 dark:text-zinc-100">AI Space</h2>
                     </div>
-                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Live</span>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => {
+                                // This will be connected to useStepIn hook
+                                window.dispatchEvent(new CustomEvent('trigger-step-in'));
+                            }}
+                            disabled={useAIStore.getState().isStepInActive}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+                                useAIStore.getState().isStepInActive
+                                    ? "bg-indigo-100 text-indigo-500 dark:bg-indigo-500/20 animate-pulse"
+                                    : "bg-indigo-500 text-white hover:bg-indigo-600 shadow-sm shadow-indigo-500/20"
+                            )}
+                        >
+                            <Sparkles className="w-3 h-3" />
+                            {useAIStore.getState().isStepInActive ? "Stepping In..." : "Step In"}
+                        </button>
+                        <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Live</span>
+                    </div>
                 </div>
 
                 {/* Search */}
