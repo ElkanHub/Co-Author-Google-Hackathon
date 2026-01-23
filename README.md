@@ -82,3 +82,4 @@ This is a research project exploring Human-AI collaboration dynamics. Feel free 
 ![Project Preview Slides](/public/slides/11.jpg)
 ![Project Preview Slides](/public/slides/12.jpg)
 ![Project Preview Slides](/public/slides/13.jpg)
+![Project Preview Slides](/public/slides/14.jpg)

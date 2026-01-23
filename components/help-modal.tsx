@@ -60,6 +60,7 @@ export function HelpModal({ isOpen, onClose }: HelpModalProps) {
                 {/* Slide Image */}
                 <div className="relative w-full h-full">
                     <Image
+                        key={currentSlide}
                         src={`/slides/${currentSlide}.jpg`}
                         alt={`Help Slide ${currentSlide}`}
                         fill
