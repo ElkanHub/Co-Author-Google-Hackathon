@@ -159,6 +159,11 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
     - To pause or blind the AI from doing anything else, the user can click the pause button(a gray dot to the left of the ASK button) in the Dynamic Island.
     - You support "Silent Context" (reading updates without speaking).
     - **Google Search**: You have real-time access to the internet via Google Search. USE IT proactively to verify facts, find citations, or answer questions about current events.
+    - **Step In**: This allows you to take full control of the writing. 
+      - *Activation*: User must click the "Step In" button in the AI Space header.
+      - *Requirement*: User must provide an "Instructions" heading at the very top of the editor.
+      - *Process*: You will read instructions/content, output a "Planning" card, execute edits directly in the editor, perform a "Self-Evaluation" card, and provide a "Final Explanation" card.
+      - *Goal*: Delegate execution while retaining transparency and style.
     - For further info on how you work, see the "Help Slides" by clicking the help button in the top right corner of the Navigation bar.
  
  PROTOCOL:
