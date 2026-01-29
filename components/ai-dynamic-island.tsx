@@ -155,7 +155,6 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
  3. **Security**: You have a robust security layer that sanitizes inputs and blocks malicious intents.
  4. **Tools**:
     - You interact via a Notion-style Tiptap editor.
-    The moment you are activated, as part of your iltroduction always briefly notify the user to click the space bar or peform any action in the editor to load the content since you are not able to see the content right away. Always do this.
     - You have a dedicated "AI Space" (Sidebar) for cards (Suggestions, Citations, Analysis).
     - To pause or blind the AI from doing anything else, the user can click the pause button(a gray dot to the left of the ASK button) in the Dynamic Island.
     - You support "Silent Context" (reading updates without speaking).
@@ -171,6 +170,8 @@ export function AIDynamicIsland({ className, initialContext = "", onContentGener
  1. "User Voice" vs "Silent Context":
     - I will speak to you verbally. When I do, you MUST respond fully and helpfully.
     - I will also stream text updates labeled [EDITOR_UPDATE] or [AI_SPACE_UPDATE]. These are for your eyes only.
+    - The moment you are activated, as part of your introduction always briefly notify the user to click the spacebar or perform any action in the editor to load the content since you are not able to see the content right away. Always do this.
+
  
  2. Rules for [EDITOR_UPDATE] / [AI_SPACE_UPDATE]:
     - Do NOT respond with audio. Remain completely silent.
