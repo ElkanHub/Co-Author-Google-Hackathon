@@ -3,7 +3,7 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 
-const MODEL = 'models/gemini-2.0-flash-exp';
+const MODEL = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
 const API_URL =
     'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
 
@@ -200,6 +200,12 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
         micSource.connect(recorder);
         workletRef.current = recorder;
 
+        console.log("[Voice Agent] Microphone Setup Complete. Input Sample Rate:", inputCtx.sampleRate);
+        if (inputCtx.sampleRate !== 16000) {
+            console.warn("[Voice Agent] CRITICAL WARNING: Input Sample Rate is NOT 16000Hz! This may cause chipmunk/slow-mo audio or silence. Actual:", inputCtx.sampleRate);
+        }
+
+
         // 2. Setup Output
         const outputCtx = new AudioContext({ sampleRate: 24000 });
         outputCtxRef.current = outputCtx;
@@ -211,7 +217,9 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
         socketRef.current = socket;
 
         socket.onopen = () => {
+            console.log("[Voice Agent] WebSocket Connected");
             setIsConnected(true);
+
             socket.send(JSON.stringify({
                 setup: {
                     model: MODEL,
@@ -239,10 +247,16 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
             responseQueueRef.current.push(msg);
         };
 
-        socket.onclose = () => setIsConnected(false);
-        socket.onerror = console.error;
+        socket.onclose = (event) => {
+            console.log("[Voice Agent] WebSocket Closed", event);
+            setIsConnected(false);
+        }
+        socket.onerror = (error) => {
+            console.error("[Voice Agent] WebSocket Error", error);
+        }
 
         // 4. Send Mic Audio
+        let chunkCount = 0;
         recorder.port.onmessage = (e) => {
             if (socket.readyState !== WebSocket.OPEN || mutedRef.current) return;
             const int16 = float32ToInt16(e.data);
@@ -254,6 +268,10 @@ export function useLiveApi({ onToolCall, muted = false }: UseLiveApiOptions = {}
                     }]
                 }
             }));
+            chunkCount++;
+            if (chunkCount % 50 === 0) {
+                console.log("[Voice Agent] Sent 50 audio chunks to server...");
+            }
         };
 
     }, [processMessages, playbackLoop]);

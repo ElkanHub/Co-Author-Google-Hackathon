@@ -312,7 +312,7 @@ const App: React.FC = () => {
                 <p className="text-subtle font-serif italic border-l-2 border-gray-200 pl-6 py-2">
                   Long-term, Co-Author aims to become the standard environment where humans and AI co-write — calmly, deliberately, and at scale.
                 </p>
-                <Link href="https://github.com/Co-Author/Co-Author" target="_blank" className="text-primary font-serif font-bold"><Button variant="outline" className="rounded-none">Check Out the Repo <Github size={16} /></Button></Link>
+                <Link href="https://github.com/ElkanHub/Co-Author-Google-Hackathon" target="_blank" className="text-primary font-serif font-bold"><Button variant="outline" className="rounded-none">Check Out the Repo <Github size={16} /></Button></Link>
               </div>
             </div>
           </div>

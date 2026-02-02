@@ -21,8 +21,8 @@ class AudioRecorder extends AudioWorkletProcessor {
         this.buffer.set(channelData, this.bufferIdx);
         this.bufferIdx += channelData.length;
 
-        // Flush if full enough (e.g. >= 2048)
-        if (this.bufferIdx >= 4096) {
+        // Flush if full enough
+        if (this.bufferIdx >= 2048) {
             this.port.postMessage(this.buffer.slice(0, this.bufferIdx));
             this.bufferIdx = 0;
         }
