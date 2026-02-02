@@ -1,4 +1,4 @@
-import { model } from '@/lib/ai/google';
+import { cacheManager } from '@/lib/ai/google';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { validateRequest } from '@/lib/security';
@@ -14,14 +14,13 @@ export async function POST(req: NextRequest) {
         }
 
         // Use sanitized text
-        const safeText = sanitizedText || "";
-        const safeContext = validateRequest(context).sanitizedText || "";
+        const safeContext = sanitizedText || "";
 
-        if (!safeText && !safeContext) {
+        if (!safeContext) {
             return NextResponse.json({ error: 'No text provided' }, { status: 400 });
         }
 
-        const prompt = `
+        const systemPrompt = `
       You are "The Mature AI" co-author. 
       Adapt your English to the user’s proficiency level (simple, standard, or advanced).
       Do not use complex or academic language unless it is clear from the user’s writing that they are an advanced English speaker.
@@ -47,11 +46,6 @@ export async function POST(req: NextRequest) {
       - "Summarizing obvious text"
       - "Banal encouragement"
       
-      User's Text Context:
-      """
-      ${text || context}
-      """
-
       Previous Suggestions (Do NOT repeat these):
       """
       ${JSON.stringify(previousSuggestions || [])}
@@ -69,7 +63,10 @@ export async function POST(req: NextRequest) {
       }
     `;
 
-        const result = await model.generateContent(prompt);
+        // The manager handles caching the context if large enough
+        // It returns a standard GenerateContentResult
+        const result = await cacheManager.generateWithCache(systemPrompt, safeContext);
+
         const response = await result.response;
         const jsonString = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
 

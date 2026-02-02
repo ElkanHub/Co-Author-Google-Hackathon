@@ -1,4 +1,4 @@
-import { model } from '@/lib/ai/google';
+import { cacheManager } from '@/lib/ai/google';
 import { NextRequest, NextResponse } from 'next/server';
 import { validateRequest } from '@/lib/security';
 
@@ -16,11 +16,11 @@ export async function POST(req: NextRequest) {
         const safeText = textCheck.sanitizedText;
         const safeIntent = intentCheck.sanitizedText;
 
-        const prompt = `
+        const systemPrompt = `
       You are an autonomous co-author not just an assistant. The user is currently in the "${stage}" stage.
-      Their specific intent is: "${intent}".
+      Their specific intent is: "${safeIntent}".
       
-      Based on the text below, generate a helpful "Intelligence Card" content. 
+      Based on the text provided in context, generate a helpful "Intelligence Card" content. 
       Do NOT just summarize. Provide value: finding gaps, suggesting sources (use placeholders like [Source 1]), or drafting next steps.
       Adapt your English to the user’s proficiency level (simple, standard, or advanced).
       Do not use complex or academic language unless it is clear from the user’s writing that they are an advanced English speaker.
@@ -32,14 +32,11 @@ export async function POST(req: NextRequest) {
          "reason": "Why you generated this (e.g. 'Noticed a lack of cited sources in this paragraph')",
          "content": "The actual helpful text content, formatted in Markdown."
       }
-
-      User Text:
-      """
-      ${text}
-      """
     `;
 
-        const result = await model.generateContent(prompt);
+        // Use CacheManager to handle potential large context caching
+        const result = await cacheManager.generateWithCache(systemPrompt, safeText || "");
+
         const response = await result.response;
         const jsonString = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
         const generation = JSON.parse(jsonString);
